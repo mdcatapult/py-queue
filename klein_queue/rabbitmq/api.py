@@ -1,0 +1,16 @@
+# -*- coding: utf-8 -*-
+from klein_config import config
+import requests
+
+
+def list_queues(exchange):
+    endpoint = "/api/exchanges/%%2f/%s/bindings/source" % exchange
+    url = 'http://%s:%s%s' % (
+        config["rabbitmq"]["host"],
+        config["rabbitmq"]["management_port"],
+        endpoint
+    )
+
+    response = requests.get(url, auth=(config["rabbitmq"]["username"], config["rabbitmq"]["password"]))
+    queues = [q["destination"] for q in response.json() if q["destination_type"] == "queue"]
+    return queues
