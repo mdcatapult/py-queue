@@ -12,6 +12,9 @@ stages:
   - test
   - publish
 
+before_script:
+  - pip install -r requirements.txt
+
 pep8:
   stage: codestyle
   script:
