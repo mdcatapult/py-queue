@@ -5,15 +5,11 @@ from klein_config import config
 from .async.consumer import Consumer
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--debug", help="enable debug", action="store_true")
-args, unknown = parser.parse_known_args()
-
-LOGGER = logging.getLogger(__name__)
-
-
-def consume(fn):
-    c = Consumer(config["consumer"], fn)
+def consume(callback):
+    '''
+    use auto detected config from klein_config to instantiate consumer
+    '''
+    c = Consumer(config["consumer"], callback)
     try:
         c.run()
     except KeyboardInterrupt:

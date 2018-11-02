@@ -10,10 +10,6 @@ import pika
 from klein_config import config as common_config
 
 
-PARSER = argparse.ArgumentParser()
-PARSER.add_argument("--debug", help="enable debug", action="store_true")
-ARGS, UNKNOWN = PARSER.parse_known_args()
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -92,9 +88,6 @@ class Connection():
         if self._closing:
             self._connection.ioloop.stop()
         else:
-            if ARGS.debug:
-                LOGGER.warning('Connection closed, reopening in 5 seconds: (%s) %s',
-                               reply_code, reply_text)
             self._connection.add_timeout(5, self.reconnect)
 
     def reconnect(self):

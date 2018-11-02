@@ -8,31 +8,31 @@ from klein_config import config
 from .sync.publisher import Publisher
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--debug", help="enable debug", action="store_true")
-args, unknown = parser.parse_known_args()
+DOWNSTREAM = Publisher(config["publisher"])
+DOWNSTREAM.connect()
 
-LOGGER = logging.getLogger(__name__)
+UPSTREAM = Publisher(config["consumer"])
+UPSTREAM.connect()
 
-downstream = Publisher(config["publisher"])
-downstream.connect()
-
-upstream = Publisher(config["consumer"])
-upstream.connect()
-
-error = Publisher(config['error'])
-error.connect()
+ERROR = Publisher(config['error'])
+ERROR.connect()
 
 
 def publish(message):
     '''
     publish message to downstream queue
     '''
-    downstream.publish(message)
+    DOWNSTREAM.publish(message)
 
 
 def requeue(message):
     '''
     publish message to same queue being consumed
     '''
-    upstream.publish(message)
+    UPSTREAM.publish(message)
+
+def error(message):
+    '''
+    publish message to error queue
+    '''
+    ERROR.publish(message)

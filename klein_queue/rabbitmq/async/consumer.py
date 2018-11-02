@@ -6,10 +6,6 @@ from klein_config import config as common_config
 from .connect import Connection
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--debug", help="enable debug", action="store_true")
-args, unknown = parser.parse_known_args()
-
 LOGGER = logging.getLogger(__name__)
 
 

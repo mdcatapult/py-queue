@@ -4,6 +4,11 @@ from klein_config import config
 
 
 def list_queues(exchange):
+    '''
+    utility to retrive queues attached to exchange
+    configured user for connection shoudl have 
+    management permissions
+    '''
     endpoint = "/api/exchanges/%%2f/%s/bindings/source" % exchange
     url = 'http://%s:%s%s' % (
         config["rabbitmq"]["host"],
