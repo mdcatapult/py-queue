@@ -7,10 +7,33 @@ cache:
     - .cache/pip
     - venv/
 
-deploy:
+stages: 
+  - test
+  - publish
+
+lint:
+  stage: test
+  script:
+    - pylint klein_queue/*
+
+publish-unstable:
+  stage: publish
+  script:
+    - pip install devpi-client
+    - devpi use http://13.0.1.67
+    - devpi login "gitlab-ci-token" --password "$CI_BUILD_TOKEN"
+    - devpi use "mdc/unstable"
+    - devpi upload --formats sdist,bdist_wheel
+  except:
+    - master
+
+publish-stable:
+  stage: publish
   script:
     - pip install devpi-client
     - devpi use http://13.0.1.67
     - devpi login "gitlab-ci-token" --password "$CI_BUILD_TOKEN"
     - devpi use "mdc/stable"
     - devpi upload --formats sdist,bdist_wheel
+  only:
+    - master
