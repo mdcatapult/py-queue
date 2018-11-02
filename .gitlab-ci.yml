@@ -11,6 +11,6 @@ deploy:
   script:
     - pip install devpi-client
     - devpi use http://13.0.1.67
-    - devpi login "mdc" --password "Sybeins836TS&A%sscd"
+    - devpi login "gitlab-ci-token" --password "$CI_BUILD_TOKEN"
     - devpi use "mdc/stable"
     - devpi upload --formats sdist,bdist_wheel
