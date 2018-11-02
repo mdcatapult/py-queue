@@ -127,9 +127,6 @@ class Connection():
         '''
         if channel closed then log and close connection
         '''
-        if ARGS.debug:
-            LOGGER.warning('Channel %i was closed: (%s) %s',
-                           channel, reply_code, reply_text)
         self._connection.close()
 
     def setup_exchanges(self):
