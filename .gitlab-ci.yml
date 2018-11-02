@@ -1,0 +1,16 @@
+image: python:latest
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache"
+
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+deploy:
+  script:
+    - pip install devpi-client
+    - devpi use https://13.0.1.67
+    - devpi login "gitlab-ci-token" --password "$CI_BUILD_TOKEN"
+    - devpi use "mdc/stable"
+    - devpi upload --formats sdist,bdist_wheel
