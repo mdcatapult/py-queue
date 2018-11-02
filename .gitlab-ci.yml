@@ -13,7 +13,7 @@ stages:
   - publish
 
 before_script:
-  - pip install -r requirements.txt
+  - pip install -r requirements.txt -i http://13.0.1.67/mdc/stable/
 
 pep8:
   stage: codestyle
