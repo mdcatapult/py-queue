@@ -14,6 +14,7 @@ stages:
 lint:
   stage: test
   script:
+    - pip install devpi-client
     - pylint klein_queue/*
 
 publish-unstable:
