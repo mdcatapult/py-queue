@@ -1,26 +1,36 @@
 # -*- coding: utf-8 -*-
-from klein_config import config
-from .rabbitmq.publisher import publish as QueuePublish, requeue as QueueRequeue, error as QueueError
+'''
+klein_queue.publisher
+'''
 import os
-import logging  
+import logging
 import json
+from klein_config import config
+from .rabbitmq.publisher import publish as QueuePublish
+from .rabbitmq.publisher import requeue as QueueRequeue
+from .rabbitmq.publisher import error as QueueError
 
 
 LOGGER = logging.getLogger(__name__)
 
+
 def publish(data):
+    '''
+    Publish data to configured queue
+    '''
     QueuePublish(data)
 
 
 def requeue(data, **kwargs):
+    '''
+    publish data back on to queue being consumed
+    '''
     if "klein.requeued" in data:
         data["klein.requeued"] = data["klein.requeued"] + 1
     else:
         data["klein.requeued"] = 1
-    
-    limit = int(config["limits"]["max_requeue"])
-    if "limit" in kwargs: 
-        limit = kwargs["limit"]
+
+    limit = kwargs.get("limit", int(config["limits"]["max_requeue"]))
 
     if limit and int(data["klein.requeued"]) >= limit:
         if "consumer" in config and "queue" in config["consumer"]:
@@ -32,6 +42,10 @@ def requeue(data, **kwargs):
     else:
         QueueRequeue(data)
 
+
 def error(data):
+    '''
+    publish data to error queue
+    '''
     LOGGER.debug(json.dumps(data))
     QueueError(data)

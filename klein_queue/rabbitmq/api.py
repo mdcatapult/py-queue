@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from klein_config import config
 import requests
+from klein_config import config
 
 
 def list_queues(exchange):
@@ -11,6 +11,8 @@ def list_queues(exchange):
         endpoint
     )
 
-    response = requests.get(url, auth=(config["rabbitmq"]["username"], config["rabbitmq"]["password"]))
-    queues = [q["destination"] for q in response.json() if q["destination_type"] == "queue"]
+    response = requests.get(url, auth=(
+        config["rabbitmq"]["username"], config["rabbitmq"]["password"]))
+    queues = [q["destination"]
+              for q in response.json() if q["destination_type"] == "queue"]
     return queues

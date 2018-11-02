@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
-from klein_config import config
-from .sync.publisher import Publisher
+'''
+klein_queue.rabbitmq.publisher
+'''
 import logging
 import argparse
+from klein_config import config
+from .sync.publisher import Publisher
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", help="enable debug", action="store_true")
@@ -21,9 +25,14 @@ error.connect()
 
 
 def publish(message):
+    '''
+    publish message to downstream queue
+    '''
     downstream.publish(message)
 
 
 def requeue(message):
+    '''
+    publish message to same queue being consumed
+    '''
     upstream.publish(message)
-

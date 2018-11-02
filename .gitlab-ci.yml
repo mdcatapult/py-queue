@@ -8,8 +8,15 @@ cache:
     - venv/
 
 stages: 
+  - codestyle
   - test
   - publish
+
+pep8:
+  stage: codestyle
+  script:
+    - pip install autopep8
+    - autopep8 -r -a --in-place klein_queue/*
 
 lint:
   stage: test

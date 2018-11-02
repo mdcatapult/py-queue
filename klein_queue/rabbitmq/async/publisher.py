@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-from .connect import Connection
+# pylint: disable=import-error
 import logging
-import pika
+from collections import deque
 import argparse
 import json
-from collections import deque
+import pika
+from .connect import Connection
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", help="enable debug", action="store_true")
@@ -59,16 +61,18 @@ class Publisher(Connection):
         if self._stopping:
             return
 
-        LOGGER.debug('Schedueling next message for %0.1f seconds', self._publish_interval)
+        LOGGER.debug('Schedueling next message for %0.1f seconds',
+                     self._publish_interval)
         self._connection.add_timeout(self._publish_interval,
                                      self.publish_message)
 
     def publish_message(self):
         if self._stopping:
-            LOGGER.debug('Publisher currently stopping, unable to publish messages at this time')
+            LOGGER.debug(
+                'Publisher currently stopping, unable to publish messages at this time')
             return
 
-        if len(self._messages) == 0:
+        if not self._messages:
             # no messages to publish... do nothing
             return
 
@@ -90,5 +94,6 @@ class Publisher(Connection):
         self.schedule_next_message()
 
     def add(self, message):
-        LOGGER.debug('Adding message to internal stack ready for publishing', self._publish_interval)
+        LOGGER.debug(
+            'Adding message to internal stack ready for publishing')
         self._messages.append(message)

@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-from klein_config import config
-from .async.consumer import Consumer
 import logging
 import argparse
+from klein_config import config
+from .async.consumer import Consumer
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", help="enable debug", action="store_true")

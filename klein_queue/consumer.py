@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
+'''
+klein_queue.consumer
+'''
 from .rabbitmq.consumer import consume as QueueConsume
-import json
 
-def consume(fn):
-    QueueConsume(fn)
+
+def consume(callback):
+    '''
+    Consumer configured queue with callback
+    '''
+    QueueConsume(callback)

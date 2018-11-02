@@ -1,18 +1,22 @@
 # -*- coding: utf-8 -*-
-from .connect import Connection
+# pylint: disable=import-error
+'''
+klein_queue.rabbitmq.sync.publisher
+'''
 import logging
+import json
 import pika
 import pika.exceptions
-import argparse
-import json
+from .connect import Connection
 
 LOGGER = logging.getLogger(__name__)
 
 
 class Publisher(Connection):
-
-    def __init__(self, config):
-        super().__init__(config)
+    '''
+    Synchronous publisher,
+    good for publishing single messages programatically
+    '''
 
     def __call__(self, message):
         self.publish(message)
@@ -27,7 +31,8 @@ class Publisher(Connection):
 
     def publish_message(self, message):
         if self._closing:
-            LOGGER.debug('Publisher currently stopping, unable to publish messages at this time')
+            LOGGER.debug(
+                'Publisher currently stopping, unable to publish messages at this time')
             return
 
         # properties = pika.BasicProperties(app_id='klein-consumer',
@@ -37,7 +42,8 @@ class Publisher(Connection):
         routing_key = ''
         exchange = ''
 
-        if ("queue" not in self._config or self._config["queue"] is False) and "exchange" in self._config:
+        if ("queue" not in self._config or self._config["queue"]
+                is False) and "exchange" in self._config:
             exchange = self._config["exchange"]
         elif "queue" in self._config:
             routing_key = self._config["queue"]
@@ -45,5 +51,6 @@ class Publisher(Connection):
             print('Unable to publish message no valid routing key or exchange defined')
             return
 
-        LOGGER.debug('Publishing message %s to queue "%s"', json.dumps(message), routing_key if len(routing_key)>0 else exchange)
+        LOGGER.debug('Publishing message %s to queue "%s"', json.dumps(
+            message), routing_key if routing_key else exchange)
         self._channel.publish(exchange, routing_key, json.dumps(message))
