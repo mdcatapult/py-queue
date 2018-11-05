@@ -3,7 +3,7 @@
 klein_queue.rabbitmq.publisher
 '''
 from klein_config import config
-from .sync.publisher import Publisher
+from .synchronous.publisher import Publisher
 
 
 DOWNSTREAM = Publisher(config["publisher"])
