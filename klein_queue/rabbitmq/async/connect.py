@@ -4,7 +4,6 @@
 klein_queue.rabbitmq.async.connect
 '''
 import abc
-import argparse
 import logging
 import pika
 from klein_config import config as common_config
@@ -124,6 +123,7 @@ class Connection():
         self._channel.add_on_close_callback(self.on_channel_closed)
 
     def on_channel_closed(self, channel, reply_code, reply_text):
+        # pylint: disable=unused-argument
         '''
         if channel closed then log and close connection
         '''

@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import logging
-import argparse
 from klein_config import config
 from .async.consumer import Consumer
 

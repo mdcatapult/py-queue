@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import argparse
 from klein_config import config as common_config
 from .connect import Connection
 

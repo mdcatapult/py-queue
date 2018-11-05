@@ -25,7 +25,7 @@ lint:
   stage: test
   script:
     - pip install pylint
-    - pylint klein_queue/*
+    - pylint --rcfile=./.pylintrc klein_queue/*
 
 publish-unstable:
   stage: publish

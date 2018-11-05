@@ -2,8 +2,6 @@
 '''
 klein_queue.rabbitmq.publisher
 '''
-import logging
-import argparse
 from klein_config import config
 from .sync.publisher import Publisher
 

@@ -2,7 +2,6 @@
 # pylint: disable=import-error
 import logging
 from collections import deque
-import argparse
 import json
 import pika
 from .connect import Connection
