@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-from klein_config import config
 import requests
-
+from klein_config import config
 
 
 def list_queues(exchange):
     '''
     utility to retrive queues attached to exchange
-    configured user for connection shoudl have 
+    configured user for connection shoudl have
     management permissions
     '''
     endpoint = "/api/exchanges/%%2f/%s/bindings/source" % exchange

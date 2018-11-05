@@ -29,6 +29,7 @@ def requeue(message):
     '''
     UPSTREAM.publish(message)
 
+
 def error(message):
     '''
     publish message to error queue

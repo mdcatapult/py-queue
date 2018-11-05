@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+'''
+kleon_queue_rabbitmq.consumer
+'''
 from klein_config import config
 from .async.consumer import Consumer
 

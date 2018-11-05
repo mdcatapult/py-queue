@@ -9,6 +9,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Consumer(Connection):
+    '''
+    Consumer class
+    '''
 
     def __init__(self, config, handler_fn):
         self._handler_fn = handler_fn
