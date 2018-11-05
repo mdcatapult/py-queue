@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-import requests
 from klein_config import config
+import requests
+
 
 
 def list_queues(exchange):

@@ -1,2 +1,3 @@
 klein_config
 pika
+requests
