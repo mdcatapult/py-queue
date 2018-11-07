@@ -5,9 +5,10 @@ klein_queue.rabbitmq.publisher
 from klein_config import config
 from .synchronous.publisher import Publisher
 
-
-DOWNSTREAM = Publisher(config.get("publisher"))
-DOWNSTREAM.connect()
+DOWNSTREAM = None
+if config.has("publisher"):
+  DOWNSTREAM = Publisher(config.get("publisher"))
+  DOWNSTREAM.connect()
 
 UPSTREAM = Publisher(config.get("consumer"))
 UPSTREAM.connect()
@@ -20,6 +21,8 @@ def publish(message):
     '''
     publish message to downstream queue
     '''
+    if not DOWNSTREAM:
+      raise EnvironmentError("No downstream has been configured for publishing")
     DOWNSTREAM.publish(message)
 
 
