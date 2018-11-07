@@ -37,10 +37,10 @@ class Connection():
         initialise connection parameters and reset internal vars
         '''
         self._url = 'amqp://%s:%s@%s:%s/?backpressure_detection=t' % (
-            common_config["rabbitmq"]["username"],
-            common_config["rabbitmq"]["password"],
-            common_config["rabbitmq"]["host"],
-            common_config["rabbitmq"]["port"])
+            common_config.get("rabbitmq.username"),
+            common_config.get("rabbitmq.password"),
+            common_config.get("rabbitmq.host"),
+            common_config.get("rabbitmq.port"))
 
         self._config = config
         self._connection = None

@@ -22,7 +22,7 @@ class Consumer(Connection):
         LOGGER.debug('Issuing consumer related RPC commands')
         self.add_on_cancel_callback()
         self._consumer_tag = self._channel.basic_consume(
-            self.on_message, queue=common_config["consumer"]["queue"])
+            self.on_message, queue=common_config.get("consumer.queue")
 
     def on_message(self, unused_channel, basic_deliver, properties, body):
         # pylint: disable=unused-argument

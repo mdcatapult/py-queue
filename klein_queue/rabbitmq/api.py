@@ -11,13 +11,14 @@ def list_queues(exchange):
     '''
     endpoint = "/api/exchanges/%%2f/%s/bindings/source" % exchange
     url = 'http://%s:%s%s' % (
-        config["rabbitmq"]["host"],
-        config["rabbitmq"]["management_port"],
+        config.get("rabbitmq.host"),
+        config.get("rabbitmq.management_port"),
         endpoint
     )
 
     response = requests.get(url, auth=(
-        config["rabbitmq"]["username"], config["rabbitmq"]["password"]))
+        config.get("rabbitmq.username"), 
+        config.get("rabbitmq.password"))
     queues = [q["destination"]
               for q in response.json() if q["destination_type"] == "queue"]
     return queues

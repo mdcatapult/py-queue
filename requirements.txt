@@ -1,3 +1,6 @@
-klein_config
+klein_config<=1.0.1
 pika
 requests
+pytest
+mock
+pylint

@@ -6,13 +6,13 @@ from klein_config import config
 from .synchronous.publisher import Publisher
 
 
-DOWNSTREAM = Publisher(config["publisher"])
+DOWNSTREAM = Publisher(config.get("publisher"))
 DOWNSTREAM.connect()
 
-UPSTREAM = Publisher(config["consumer"])
+UPSTREAM = Publisher(config.get("consumer"))
 UPSTREAM.connect()
 
-ERROR = Publisher(config['error'])
+ERROR = Publisher(config.get('error'))
 ERROR.connect()
 
 
