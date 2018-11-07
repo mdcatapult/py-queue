@@ -57,7 +57,7 @@ class Connection():
         '''
         if "exchanges" in self._config:
             LOGGER.debug('Declaring exchanges %s', self._config["exchanges"])
-            for ex in self._config['exchanges'].split(','):
+            for ex in self._config['exchanges']:
                 self._channel.exchange_declare(ex, 'fanout')
         self.setup_queue()
 
@@ -78,7 +78,7 @@ class Connection():
         If exchanges configured then bind the queue to it
         '''
         if "exchanges" in self._config:
-            for ex in self._config['exchanges'].split(','):
+            for ex in self._config['exchanges']:
                 LOGGER.debug('Binding %s to %s', ex, self._config["queue"])
                 self._channel.queue_bind(self._config["queue"], ex)
 
