@@ -24,7 +24,7 @@ class Publisher(Connection):
     def publish(self, message):
         try:
             self.publish_message(message)
-        except pika.exceptions.ConnectionClosed:
+        except (pika.exceptions.ConnectionClosed, pika.exceptions.ChannelClosed):
             LOGGER.debug('reconnecting to queue')
             self.connect()
             self.publish_message(message)
