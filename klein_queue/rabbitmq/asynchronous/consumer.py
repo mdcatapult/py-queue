@@ -24,8 +24,14 @@ class Consumer(Connection):
         self._consumer_tag = self._channel.basic_consume(
             self.on_message, queue=common_config.get("consumer.queue"))
 
-    def on_message(self, unused_channel, basic_deliver, properties, body):
+    def on_message(self, channel, basic_deliver, properties, body):
         # pylint: disable=unused-argument
+        '''
+        On receipt of message check to see if auto acknowledge required
+        Pass message to consumers handler function
+        If result returned from handler chek to see if it is 
+        callable and execute otherwise acknowlege if not already done
+        '''
         LOGGER.debug('Received message # %s from %s: %s',
                      basic_deliver.delivery_tag, properties.app_id, body)
         
@@ -35,12 +41,14 @@ class Consumer(Connection):
             self.acknowledge_message(basic_deliver.delivery_tag)
 
         try:
-            self._handler_fn(json.loads(
+            result = self._handler_fn(json.loads(
                 body), basic_deliver=basic_deliver, properties=properties)
         except (json.decoder.JSONDecodeError, json.JSONDecodeError) as err:
             LOGGER.error("unable to process message %s : %s", body, str(err))
 
-        if not auto_ack:
+        if result is not None and callable(result):
+            result(self, channel, basic_deliver, properties)
+        elif result is True and not auto_ack:
             self.acknowledge_message(basic_deliver.delivery_tag)
 
     def stop_activity(self):
