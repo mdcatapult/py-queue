@@ -17,7 +17,7 @@ def list_queues(exchange):
     )
 
     response = requests.get(url, auth=(
-        config.get("rabbitmq.username"), 
+        config.get("rabbitmq.username"),
         config.get("rabbitmq.password"))
     )
     queues = [q["destination"]

@@ -29,11 +29,11 @@ def requeue(data, **kwargs):
         data["klein.requeued"] = data["klein.requeued"] + 1
     else:
         data["klein.requeued"] = 1
-        
+
     limit = kwargs.get("limit", int(config.get("limits.max_requeue", False)))
 
     if limit and int(data["klein.requeued"]) >= limit:
-        if config.has("consumer.queue"): 
+        if config.has("consumer.queue"):
             data["queue"] = config.get("consumer.queue")
         data["path"] = os.getcwd()
         data["message"] = f"Max Requeue limit ({limit}) hit"

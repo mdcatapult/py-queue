@@ -29,12 +29,12 @@ class Consumer(Connection):
         '''
         On receipt of message check to see if auto acknowledge required
         Pass message to consumers handler function
-        If result returned from handler check to see if it is 
+        If result returned from handler check to see if it is
         callable and execute otherwise acknowlege if not already done
         '''
         LOGGER.debug('Received message # %s from %s: %s',
                      basic_deliver.delivery_tag, properties.app_id, body)
-        
+
         auto_ack = common_config.get("consumer.auto_acknowledge", True)
 
         if auto_ack:

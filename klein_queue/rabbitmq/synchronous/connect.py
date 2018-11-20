@@ -4,6 +4,7 @@
 klein_queue.rabbitmq.sync.connect
 '''
 import logging
+import json
 import pika
 from klein_config import config as common_config
 
@@ -60,9 +61,11 @@ class Connection():
             for ex in self._config['exchanges']:
                 ex_name = ex
                 ex_type = 'fanout'
-                if isinstance(ex,dict):
+                if isinstance(ex, dict):
                     if "name" not in ex or "type" not in ex:
-                        raise RuntimeError("Invalid consumer configuration: %s" % (json.dumps(ex)))
+                        raise RuntimeError(
+                            "Invalid consumer configuration: %s" %
+                            (json.dumps(ex)))
                     ex_name = ex["name"]
                     ex_type = ex["type"]
                 self._channel.exchange_declare(ex_name, ex_type)
@@ -88,9 +91,11 @@ class Connection():
             for ex in self._config['exchanges']:
                 LOGGER.debug('Binding %s to %s', ex, self._config["queue"])
                 ex_name = ex
-                if isinstance(ex,dict):
+                if isinstance(ex, dict):
                     if "name" not in ex:
-                        raise RuntimeError("Invalid consumer configuration: %s" % (json.dumps(ex)))
+                        raise RuntimeError(
+                            "Invalid consumer configuration: %s" %
+                            (json.dumps(ex)))
                     ex_name = ex["name"]
                 self._channel.queue_bind(self._config["queue"], ex_name)
 
