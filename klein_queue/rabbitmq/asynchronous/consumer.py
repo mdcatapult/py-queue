@@ -28,13 +28,20 @@ class Consumer(Connection):
         # pylint: disable=unused-argument
         LOGGER.debug('Received message # %s from %s: %s',
                      basic_deliver.delivery_tag, properties.app_id, body)
-        self.acknowledge_message(basic_deliver.delivery_tag)
+        
+        auto_ack = common_config.get("consumer.auto_acknowledge", True)
+
+        if auto_ack:
+            self.acknowledge_message(basic_deliver.delivery_tag)
 
         try:
             self._handler_fn(json.loads(
                 body), basic_deliver=basic_deliver, properties=properties)
         except (json.decoder.JSONDecodeError, json.JSONDecodeError) as err:
             LOGGER.error("unable to process message %s : %s", body, str(err))
+
+        if not auto_ack:
+            self.acknowledge_message(basic_deliver.delivery_tag)
 
     def stop_activity(self):
         if self._channel:
