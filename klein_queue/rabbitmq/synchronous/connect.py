@@ -58,7 +58,14 @@ class Connection():
         if "exchanges" in self._config:
             LOGGER.debug('Declaring exchanges %s', self._config["exchanges"])
             for ex in self._config['exchanges']:
-                self._channel.exchange_declare(ex, 'fanout')
+                ex_name = ex
+                ex_type = 'fanout'
+                if isinstance(ex,dict):
+                    if "name" not in ex or "type" not in ex:
+                        raise RuntimeError("Invalid consumer configuration: %s" % (json.dumps(ex)))
+                    ex_name = ex["name"]
+                    ex_type = ex["type"]
+                self._channel.exchange_declare(ex_name, ex_type)
         self.setup_queue()
 
     def setup_queue(self):
@@ -80,7 +87,12 @@ class Connection():
         if "exchanges" in self._config:
             for ex in self._config['exchanges']:
                 LOGGER.debug('Binding %s to %s', ex, self._config["queue"])
-                self._channel.queue_bind(self._config["queue"], ex)
+                ex_name = ex
+                if isinstance(ex,dict):
+                    if "name" not in ex:
+                        raise RuntimeError("Invalid consumer configuration: %s" % (json.dumps(ex)))
+                    ex_name = ex["name"]
+                self._channel.queue_bind(self._config["queue"], ex_name)
 
     def acknowledge_message(self, delivery_tag):
         '''

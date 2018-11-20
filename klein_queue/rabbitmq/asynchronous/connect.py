@@ -6,6 +6,7 @@ klein_queue.rabbitmq.async.connect
 import abc
 import logging
 import pika
+import json
 from klein_config import config as common_config
 
 
@@ -138,8 +139,16 @@ class Connection():
         if "exchanges" in self._config:
             LOGGER.debug('Declaring exchanges %s', self._config["exchanges"])
             for ex in self._config['exchanges']:
+                if isinstance(ex,dict):
+                    ex_name = ex
+                    ex_type = 'fanout'
+                    if "name" not in ex or "type" not in ex:
+                        raise RuntimeError("Invalid consumer configuration: %s" % (json.dumps(ex)))
+                    ex_name = ex["name"]
+                    ex_type = ex["type"]
+
                 self._channel.exchange_declare(
-                    self.on_exchange_declareok, ex, 'fanout')
+                    self.on_exchange_declareok, ex_name, ex_type)
         else:
             self.setup_queue()
 
