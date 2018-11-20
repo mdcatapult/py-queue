@@ -139,9 +139,9 @@ class Connection():
         if "exchanges" in self._config:
             LOGGER.debug('Declaring exchanges %s', self._config["exchanges"])
             for ex in self._config['exchanges']:
+                ex_name = ex
+                ex_type = 'fanout'
                 if isinstance(ex,dict):
-                    ex_name = ex
-                    ex_type = 'fanout'
                     if "name" not in ex or "type" not in ex:
                         raise RuntimeError("Invalid consumer configuration: %s" % (json.dumps(ex)))
                     ex_name = ex["name"]
@@ -179,8 +179,14 @@ class Connection():
         if "exchanges" in self._config:
             for ex in self._config['exchanges']:
                 LOGGER.debug('Binding %s to %s', ex, self._config["queue"])
+                ex_name = ex
+                if isinstance(ex,dict):
+                    if "name" not in ex:
+                        raise RuntimeError("Invalid consumer configuration: %s" % (json.dumps(ex)))
+                    ex_name = ex["name"]
+
                 self._channel.queue_bind(
-                    self.on_bindok, self._config["queue"], ex)
+                    self.on_bindok, self._config["queue"], ex_name)
         else:
             self.start_activity()
 
