@@ -29,7 +29,7 @@ class Consumer(Connection):
         '''
         On receipt of message check to see if auto acknowledge required
         Pass message to consumers handler function
-        If result returned from handler chek to see if it is 
+        If result returned from handler check to see if it is 
         callable and execute otherwise acknowlege if not already done
         '''
         LOGGER.debug('Received message # %s from %s: %s',
@@ -48,7 +48,7 @@ class Consumer(Connection):
 
         if result is not None and callable(result):
             result(self, channel, basic_deliver, properties)
-        elif result is True and not auto_ack:
+        elif result is True or not auto_ack:
             self.acknowledge_message(basic_deliver.delivery_tag)
 
     def stop_activity(self):
