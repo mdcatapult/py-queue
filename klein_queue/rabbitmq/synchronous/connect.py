@@ -87,7 +87,7 @@ class Connection():
                                         exclusive=False,
                                         auto_delete=False,
                                         arguments={
-                                            "x-queue-mode":"lazy"
+                                            "queue-mode":"lazy"
                                         })
             self.bind_to_exchange()
 
