@@ -113,6 +113,7 @@ class Connection():
         '''
         LOGGER.debug('Channel opened')
         self._channel = channel
+        channel.basic_qos(prefetch_count=common_config.get("rabbitmq.prefetch", 1))
         self.add_on_channel_close_callback()
         self.setup_exchanges()
 
