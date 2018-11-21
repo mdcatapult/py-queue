@@ -180,7 +180,7 @@ class Connection():
                                     exclusive=False,
                                     auto_delete=False,
                                     arguments={
-                                        "x-queue-mode":"lazy"
+                                        "queue-mode":"lazy"
                                     })
 
     def on_queue_declareok(self, method_frame):
