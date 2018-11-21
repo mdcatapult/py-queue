@@ -50,7 +50,11 @@ class Connection():
         '''
         LOGGER.debug('Creating a new channel')
         self._channel = self._connection.channel()
-        self._channel.basic_qos(prefetch_count=common_config.get("rabbitmq.prefetch", 1))
+
+        prefetch=1
+        if "prefetch" in self._config:
+            prefetch = self._config["prefetch"]
+        self._channel.basic_qos(prefetch_count=prefetch)
 
     def setup_exchanges(self):
         '''
