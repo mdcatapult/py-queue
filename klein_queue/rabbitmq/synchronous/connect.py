@@ -50,6 +50,7 @@ class Connection():
         '''
         LOGGER.debug('Creating a new channel')
         self._channel = self._connection.channel()
+        self._channel.basic_qos(prefetch_count=common_config.get("rabbitmq.prefetch", 1))
 
     def setup_exchanges(self):
         '''
@@ -80,7 +81,10 @@ class Connection():
             self._channel.queue_declare(queue=self._config["queue"],
                                         durable=True,
                                         exclusive=False,
-                                        auto_delete=False)
+                                        auto_delete=False,
+                                        arguments={
+                                            "x-queue-mode":"lazy"
+                                        })
             self.bind_to_exchange()
 
     def bind_to_exchange(self):
