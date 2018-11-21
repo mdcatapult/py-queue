@@ -19,13 +19,13 @@ def list_queues(exchange, flush=False):
     if flush:
         del cache[exchange]
 
-    if exchange in cache:
-        if "timestamp" in cache[exchange]:
-            diff = time.time() - cache[exchange]["timestamp"]
-            if diff >= ttl:
-                del cache[exchange]
-        if "queues" in cache[exchange]:
-            return cache[exchange]["queues"]
+    if exchange in cache and "timestamp" in cache[exchange]:
+        diff = time.time() - cache[exchange]["timestamp"]
+        if diff >= ttl:
+            del cache[exchange]
+
+    if exchange in cache and "queues" in cache[exchange]:
+        return cache[exchange]["queues"]
 
     endpoint = "/api/exchanges/%%2f/%s/bindings/source" % exchange
     url = 'http://%s:%s%s' % (
