@@ -109,6 +109,7 @@ class Connection():
     def on_channel_open(self, channel):
         '''
         on successful open of channel then bind close callback
+        configures qos 
         also setup exchanges
         '''
         LOGGER.debug('Channel opened')
@@ -172,7 +173,10 @@ class Connection():
                                     queue=self._config["queue"],
                                     durable=True,
                                     exclusive=False,
-                                    auto_delete=False)
+                                    auto_delete=False,
+                                    arguments={
+                                        "x-queue-mode":"lazy"
+                                    })
 
     def on_queue_declareok(self, method_frame):
         # pylint: disable=unused-argument
