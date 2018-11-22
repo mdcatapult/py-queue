@@ -48,7 +48,7 @@ class Consumer(Connection):
 
         if result is not None and callable(result):
             result(self, channel, basic_deliver, properties)
-        elif result is True or not auto_ack:
+        elif result is not False or not auto_ack:
             self.acknowledge_message(basic_deliver.delivery_tag)
 
     def stop_activity(self):
