@@ -17,6 +17,7 @@ def nack(msg):
         channel.basic_nack(envelope.delivery_tag)
     return handle
 
+
 def ack(msg):
     '''
     Covienience currid function to Acknowledge message
@@ -26,6 +27,7 @@ def ack(msg):
         print(time.time(), "ACK: ", envelope.delivery_tag, msg)
         channel.basic_ack(envelope.delivery_tag)
     return handle
+
 
 def nackError(err):
     '''

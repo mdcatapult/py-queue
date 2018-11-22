@@ -109,13 +109,13 @@ class Connection():
     def on_channel_open(self, channel):
         '''
         on successful open of channel then bind close callback
-        configures qos 
+        configures qos
         also setup exchanges
         '''
         LOGGER.debug('Channel opened')
         self._channel = channel
 
-        prefetch=1
+        prefetch = 1
         if "prefetch" in self._config:
             prefetch = self._config["prefetch"]
         self._channel.basic_qos(prefetch_count=prefetch)
@@ -180,7 +180,7 @@ class Connection():
                                     exclusive=False,
                                     auto_delete=False,
                                     arguments={
-                                        "queue-mode":"lazy"
+                                        "queue-mode": "lazy"
                                     })
 
     def on_queue_declareok(self, method_frame):

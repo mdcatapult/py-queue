@@ -51,7 +51,7 @@ class Connection():
         LOGGER.debug('Creating a new channel')
         self._channel = self._connection.channel()
 
-        prefetch=1
+        prefetch = 1
         if "prefetch" in self._config:
             prefetch = self._config["prefetch"]
         self._channel.basic_qos(prefetch_count=prefetch)
@@ -87,8 +87,8 @@ class Connection():
                                         exclusive=False,
                                         auto_delete=False,
                                         arguments={
-                                            "queue-mode":"lazy"
-                                        })
+                                            "queue-mode": "lazy"
+            })
             self.bind_to_exchange()
 
     def bind_to_exchange(self):
