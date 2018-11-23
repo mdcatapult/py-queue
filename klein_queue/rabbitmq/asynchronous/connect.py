@@ -48,11 +48,14 @@ class Connection():
         self._channel = None
         self._closing = False
         self._connection_params = pika.URLParameters(self._url)
-        self._connection_params.socket_timeout = common_config.get("rabbitmq.socket_timeout", 5)
-        self._connection_params.heartbeat= common_config.get("rabbitmq.heartbeat", 120)
-        self._connection_params.blocked_connection_timeout = common_config.get("rabbitmq.blocked_connection_timeout", 300)
-        self._connection_params.retry_delay = common_config.get("rabbitmq.retry_delay", 10)
-        
+        self._connection_params.socket_timeout = common_config.get(
+            "rabbitmq.socket_timeout", 5)
+        self._connection_params.heartbeat = common_config.get(
+            "rabbitmq.heartbeat", 120)
+        self._connection_params.blocked_connection_timeout = common_config.get(
+            "rabbitmq.blocked_connection_timeout", 300)
+        self._connection_params.retry_delay = common_config.get(
+            "rabbitmq.retry_delay", 10)
 
     def connect(self):
         '''
