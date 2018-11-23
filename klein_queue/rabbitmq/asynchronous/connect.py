@@ -49,6 +49,10 @@ class Connection():
         self._closing = False
         self._connection_params = pika.URLParameters(self._url)
         self._connection_params.socket_timeout = 5
+        self._connection_params.heartbeat= 120
+        self._connection_params.blocked_connection_timeout = 300
+        self._connection_params.retry_delay = 10
+        
 
     def connect(self):
         '''
