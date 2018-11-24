@@ -13,6 +13,7 @@ setup(name='klein_queue',
       author_email='matthew.cockayne@md.catapult.org.uk',
       license='MIT',
       packages=find_packages('src'),
+      package_dir={'':'src'},
       install_requires=[
           'klein_config',
           'pika',
