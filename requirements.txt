@@ -2,5 +2,7 @@ klein_config<=1.0.1
 pika
 requests
 pytest
+pytest-cov
 mock
 pylint
+twine
