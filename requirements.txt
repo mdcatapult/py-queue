@@ -1,4 +1,4 @@
-klein_config<=1.0.1
+klein_config
 pika
 requests
 pytest
