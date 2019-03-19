@@ -43,8 +43,7 @@ class Publisher(Connection):
         routing_key = ''
         exchange = ''
 
-        if ("queue" not in self._config or self._config["queue"]
-                is False) and "exchange" in self._config:
+        if "exchange" in self._config:
             exchange = self._config["exchange"]
         
         if "queue" in self._config:
