@@ -46,7 +46,8 @@ class Publisher(Connection):
         if ("queue" not in self._config or self._config["queue"]
                 is False) and "exchange" in self._config:
             exchange = self._config["exchange"]
-        elif "queue" in self._config:
+        
+        if "queue" in self._config:
             routing_key = self._config["queue"]
         else:
             print('Unable to publish message no valid routing key or exchange defined')
@@ -54,4 +55,6 @@ class Publisher(Connection):
 
         LOGGER.debug('Publishing message %s to queue "%s"', json.dumps(
             message), routing_key if routing_key else exchange)
+
+        
         self._channel.publish(exchange, routing_key, json.dumps(message))
