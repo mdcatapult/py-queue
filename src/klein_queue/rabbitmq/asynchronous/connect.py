@@ -17,7 +17,7 @@ def blocking(config):
     '''
     create blocking connection with supplied config
     '''
-    url = 'amqp://%s:%s@%s:%s/?backpressure_detection=t' % (
+    url = 'amqp://%s:%s@%s:%s/' % (
         config["username"],
         config["password"],
         config["host"],
@@ -37,7 +37,7 @@ class Connection():
         '''
         initialise connection parameters and reset internal vars
         '''
-        self._url = 'amqp://%s:%s@%s:%s/?backpressure_detection=t' % (
+        self._url = 'amqp://%s:%s@%s:%s/' % (
             common_config.get("rabbitmq.username"),
             common_config.get("rabbitmq.password"),
             common_config.get("rabbitmq.host"),

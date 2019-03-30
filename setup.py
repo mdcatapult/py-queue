@@ -6,7 +6,7 @@ def readme():
         return f.read()
 
 setup(name='klein_queue',
-      version='0.1.10',
+      version='0.1.11',
       description='RabbitMQ integration',
       url='http://gitlab.mdcatapult.io/informatics/klein/klein_queue',
       author='Matt Cockayne',
@@ -16,7 +16,7 @@ setup(name='klein_queue',
       package_dir={'':'src'},
       install_requires=[
           'klein_config',
-          'pika',
+          'pika>=1.0.0',
           'requests'
       ],
       zip_safe=True)
