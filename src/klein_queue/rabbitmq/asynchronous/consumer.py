@@ -40,6 +40,8 @@ class Consumer(Connection):
         if auto_ack:
             self.acknowledge_message(basic_deliver.delivery_tag)
 
+        result = None
+
         try:
             result = self._handler_fn(json.loads(
                 body), basic_deliver=basic_deliver, properties=properties)
