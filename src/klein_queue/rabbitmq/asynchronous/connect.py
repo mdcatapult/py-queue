@@ -163,8 +163,21 @@ class Connection():
                     ex_name = ex["name"]
                     ex_type = ex["type"]
 
-                self._channel.exchange_declare(
-                    self.on_exchange_declareok, ex_name, ex_type)
+
+                try 
+                    # test if exchange exists and then create queue
+                    self._channel.exchange_declare( 
+                        exchange=ex_name, 
+                        passive=True)
+                    self.setup_queue():
+                except ChannelError :
+                    # exchaneg obs doesnt exist so lets create it
+                    self._channel.exchange_declare(
+                            callback=self.on_exchange_declareok, 
+                            exchange=ex_name, 
+                            exchange_type=ex_type, 
+                            passive=False)
+                
         else:
             self.setup_queue()
 
