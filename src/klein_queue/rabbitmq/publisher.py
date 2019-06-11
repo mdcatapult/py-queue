@@ -19,7 +19,7 @@ def c(q):
         q.connect()
         success = True
     except pika.exceptions.ConnectionClosed:
-        LOGGER.debug("QUEUE: Connection Failed for %S", q._url)
+        LOGGER.debug("QUEUE: Connection Failed for %s", q._url)
         success = False
     return success
 
