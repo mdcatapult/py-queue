@@ -12,28 +12,31 @@ UPSTREAM = None
 ERROR = None
 
 def c(q):
-    q.connect()
+    success = False
+    try:
+        q.connect()
+        success = True
+    except pika.exceptions.ConnectionClosed:
+        success = False
+    return success
 
 if config.has("publisher"):
     DOWNSTREAM = Publisher(config.get("publisher"))
-    try:
-        c(DOWNSTREAM)
-    except pika.exceptions.ConnectionClosed:
-        c(DOWNSTREAM)
+    connected = False
+    while not connected:
+        connected = c(DOWNSTREAM)
 
 if config.has("consumer"):
     UPSTREAM = Publisher(config.get("consumer"))
-    try:
-        c(UPSTREAM)
-    except pika.exceptions.ConnectionClosed:
-        c(UPSTREAM)
+    connected = False
+    while not connected:
+        connected = c(DOWNSTREAM)
 
 if config.has("error"):
     ERROR = Publisher(config.get('error'))
-    try:
-        c(ERROR)
-    except pika.exceptions.ConnectionClosed:
-        c(ERROR)
+    connected = False
+    while not connected:
+        connected = c(DOWNSTREAM)
 
 
 def publish(message):
