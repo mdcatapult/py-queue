@@ -33,13 +33,13 @@ if config.has("consumer"):
     UPSTREAM = Publisher(config.get("consumer"))
     connected = False
     while not connected:
-        connected = c(DOWNSTREAM)
+        connected = c(UPSTREAM)
 
 if config.has("error"):
     ERROR = Publisher(config.get('error'))
     connected = False
     while not connected:
-        connected = c(DOWNSTREAM)
+        connected = c(ERROR)
 
 
 def publish(message):
