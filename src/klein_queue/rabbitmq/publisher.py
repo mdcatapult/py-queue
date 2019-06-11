@@ -15,11 +15,11 @@ ERROR = None
 def c(q):
     success = False
     try:
-        LOGGER.debug("QUEUE: Attempting Connection to %s", q._url)
+        LOGGER.debug("QUEUE: Attempting Connection to %s", q._url if hasattr(q, "_url") else "unknown")
         q.connect()
         success = True
     except pika.exceptions.ConnectionClosed:
-        LOGGER.debug("QUEUE: Connection Failed for %s", q._url)
+        LOGGER.debug("QUEUE: Connection Failed for %s", q._url if hasattr(q, "_url") else "unknown")
         success = False
     return success
 
