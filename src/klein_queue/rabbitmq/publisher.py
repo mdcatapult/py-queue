@@ -12,7 +12,7 @@ UPSTREAM = None
 ERROR = None
 
 def c(q):
-    c.connect()
+    q.connect()
 
 if config.has("publisher"):
     DOWNSTREAM = Publisher(config.get("publisher"))
