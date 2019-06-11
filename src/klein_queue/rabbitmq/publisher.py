@@ -2,24 +2,38 @@
 '''
 klein_queue.rabbitmq.publisher
 '''
+import pika.exceptions
 from klein_config import config
 from .synchronous.publisher import Publisher
+
 
 DOWNSTREAM = None
 UPSTREAM = None
 ERROR = None
 
+def c(q):
+    c.connect()
+
 if config.has("publisher"):
     DOWNSTREAM = Publisher(config.get("publisher"))
-    DOWNSTREAM.connect()
+    try:
+        c(DOWNSTREAM)
+    except pika.exceptions.ConnectionClosed:
+        c(DOWNSTREAM)
 
 if config.has("consumer"):
     UPSTREAM = Publisher(config.get("consumer"))
-    UPSTREAM.connect()
+    try:
+        c(UPSTREAM)
+    except pika.exceptions.ConnectionClosed:
+        c(UPSTREAM)
 
 if config.has("error"):
     ERROR = Publisher(config.get('error'))
-    ERROR.connect()
+    try:
+        c(ERROR)
+    except pika.exceptions.ConnectionClosed:
+        c(ERROR)
 
 
 def publish(message):
