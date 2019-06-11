@@ -14,9 +14,11 @@ ERROR = None
 def c(q):
     success = False
     try:
+        print(f"QUEUE: Attempting Connection to ${q._url}")
         q.connect()
         success = True
     except pika.exceptions.ConnectionClosed:
+        print(f"QUEUE: Connection Failed for ${q._url}")
         success = False
     return success
 
