@@ -2,11 +2,12 @@
 '''
 klein_queue.rabbitmq.publisher
 '''
+import logging
 import pika.exceptions
 from klein_config import config
 from .synchronous.publisher import Publisher
 
-
+LOGGER = logging.getLogger(__name__)
 DOWNSTREAM = None
 UPSTREAM = None
 ERROR = None
@@ -14,11 +15,11 @@ ERROR = None
 def c(q):
     success = False
     try:
-        print(f"QUEUE: Attempting Connection to ${q._url}")
+        LOGGER.debug("QUEUE: Attempting Connection to %s", q._url)
         q.connect()
         success = True
     except pika.exceptions.ConnectionClosed:
-        print(f"QUEUE: Connection Failed for ${q._url}")
+        LOGGER.debug("QUEUE: Connection Failed for %S", q._url)
         success = False
     return success
 
