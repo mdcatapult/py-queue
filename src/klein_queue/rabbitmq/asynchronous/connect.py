@@ -48,7 +48,7 @@ class Connection():
         self._channel = None
         self._closing = False
         self._connection_params = pika.URLParameters(self._url)
-        self._connection_params._virtual_host = common_config.get("rabbitmq.virtual_host","/")
+        self._connection_params._virtual_host = common_config.get("rabbitmq.vhost","/")
         self._connection_params.socket_timeout = common_config.get(
             "rabbitmq.socket_timeout", 5)
         self._connection_params.heartbeat = common_config.get(
