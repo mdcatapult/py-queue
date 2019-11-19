@@ -9,6 +9,7 @@ from klein_config import config
 from .rabbitmq.publisher import publish as QueuePublish
 from .rabbitmq.publisher import requeue as QueueRequeue
 from .rabbitmq.publisher import error as QueueError
+from .rabbitmq.publisher import supervise as QueueSupervisor
 
 
 LOGGER = logging.getLogger(__name__)
@@ -49,3 +50,11 @@ def error(data):
     '''
     LOGGER.debug(json.dumps(data))
     QueueError(data)
+
+
+def supervise(data):
+    '''
+    publish data to supervisor queue
+    '''
+    LOGGER.debug(json.dumps(data))
+    QueueSupervisor(data)
