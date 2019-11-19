@@ -44,7 +44,7 @@ if config.has("error"):
     while not connected:
         connected = c(ERROR)
 
-if config.has("supervise"):
+if config.has("supervisor"):
     SUPERVISOR = Publisher(config.get('supervisor'))
     connected = False
     while not connected:
