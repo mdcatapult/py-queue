@@ -11,7 +11,7 @@ Module to abstract queues. Currently only implements RabbitMQ, roadmap to includ
 | RABBITMQ_PASSWORD                   |             |
 | RABBITMQ_HOST                       |             |
 | RABBITMQ_PORT                       |             |
-| RABBITMQ_VIRTUAL_HOST               |             |
+| RABBITMQ_VHOST                      |             |
 | RABBITMQ_SOCKET_TIMEOUT             |             |
 | RABBITMQ_HEARTBEAT                  |             |
 | RABBITMQ_BLOCKED_CONNECTION_TIMEOUT |             |
