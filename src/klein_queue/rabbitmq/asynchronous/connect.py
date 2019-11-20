@@ -181,15 +181,16 @@ class Connection():
         '''
         declare queue with rabbitmq, ensuring durability
         '''
-        LOGGER.debug('Declaring queue %s', self._config["queue"])
-        self._channel.queue_declare(self.on_queue_declareok,
-                                    queue=self._config["queue"],
-                                    durable=True,
-                                    exclusive=False,
-                                    auto_delete=False,
-                                    arguments={
-                                        "queue-mode": "lazy"
-                                    })
+        if common_config.get("rabbit.create_queue_on_connect", True):
+            LOGGER.debug('Declaring queue %s', self._config["queue"])
+            self._channel.queue_declare(self.on_queue_declareok,
+                                        queue=self._config["queue"],
+                                        durable=True,
+                                        exclusive=False,
+                                        auto_delete=False,
+                                        arguments={
+                                            "queue-mode": "lazy"
+                                        })
 
     def on_queue_declareok(self, method_frame):
         # pylint: disable=unused-argument
