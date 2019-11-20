@@ -82,7 +82,7 @@ class Connection():
                     ex_name = ex["name"]
                     ex_type = ex["type"]
                 self._channel.exchange_declare(ex_name, ex_type)
-        if common_config.get("rabbit.create_queue_on_connect", True):
+        if common_config.get("rabbitmq.create_queue_on_connect", True):
             self.setup_queue()
 
     def setup_queue(self):
