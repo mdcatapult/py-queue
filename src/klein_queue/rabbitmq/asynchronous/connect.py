@@ -181,7 +181,8 @@ class Connection():
         '''
         declare queue with rabbitmq, ensuring durability
         '''
-        if common_config.get("rabbitmq.create_queue_on_connect", True):
+        if common_config.get("rabbitmq.create_queue_on_connect", True) and not (
+                "create_on_connect" in self._config and not self._config["create_on_connect"]):
             LOGGER.debug('Declaring queue %s', self._config["queue"])
             self._channel.queue_declare(self.on_queue_declareok,
                                         queue=self._config["queue"],

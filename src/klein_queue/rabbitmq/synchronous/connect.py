@@ -8,7 +8,6 @@ import json
 import pika
 from klein_config import config as common_config
 
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -82,7 +81,8 @@ class Connection():
                     ex_name = ex["name"]
                     ex_type = ex["type"]
                 self._channel.exchange_declare(ex_name, ex_type)
-        if common_config.get("rabbitmq.create_queue_on_connect", True):
+        if common_config.get("rabbitmq.create_queue_on_connect", True) and not (
+                "create_on_connect" in self._config and not self._config["create_on_connect"]):
             self.setup_queue()
 
     def setup_queue(self):
@@ -97,7 +97,7 @@ class Connection():
                                         auto_delete=False,
                                         arguments={
                                             "queue-mode": "lazy"
-            })
+                                        })
             self.bind_to_exchange()
 
     def bind_to_exchange(self):
