@@ -37,11 +37,18 @@ class Connection():
         '''
         initialise connection parameters and reset internal vars
         '''
-        self._url = 'amqp://%s:%s@%s:%s/' % (
-            common_config.get("rabbitmq.username"),
-            common_config.get("rabbitmq.password"),
-            common_config.get("rabbitmq.host"),
-            common_config.get("rabbitmq.port"))
+        if common_config.get("rabbitmq.ssl", False):
+            self._url = 'https://%s:%s@%s:%s/' % (
+                common_config.get("rabbitmq.username"),
+                common_config.get("rabbitmq.password"),
+                common_config.get("rabbitmq.host"),
+                common_config.get("rabbitmq.port"))
+        else:
+            self._url = 'amqp://%s:%s@%s:%s/' % (
+                common_config.get("rabbitmq.username"),
+                common_config.get("rabbitmq.password"),
+                common_config.get("rabbitmq.host"),
+                common_config.get("rabbitmq.port"))
 
         self._config = config
         self._connection = None
