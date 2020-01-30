@@ -3,7 +3,9 @@
 klein_queue.rabbitmq.publisher
 '''
 import logging
+
 import pika.exceptions
+
 from klein_config import config
 from .synchronous.publisher import Publisher
 
@@ -11,6 +13,7 @@ LOGGER = logging.getLogger(__name__)
 DOWNSTREAM = None
 UPSTREAM = None
 ERROR = None
+
 
 def c(q):
     success = False
@@ -22,6 +25,7 @@ def c(q):
         LOGGER.debug("QUEUE: Connection Failed for %s", q._url if hasattr(q, "_url") else "unknown")
         success = False
     return success
+
 
 if config.has("publisher"):
     DOWNSTREAM = Publisher(config.get("publisher"))

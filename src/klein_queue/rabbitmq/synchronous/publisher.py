@@ -3,10 +3,12 @@
 '''
 klein_queue.rabbitmq.sync.publisher
 '''
-import logging
 import json
+import logging
+
 import pika
 import pika.exceptions
+
 from .connect import Connection
 
 LOGGER = logging.getLogger(__name__)
@@ -15,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 class Publisher(Connection):
     '''
     Synchronous publisher,
-    good for publishing single messages programatically
+    good for publishing single messages programmatically
     '''
 
     def __call__(self, message):
@@ -45,7 +47,7 @@ class Publisher(Connection):
 
         if "exchange" in self._config:
             exchange = self._config["exchange"]
-        
+
         if "queue" in self._config:
             routing_key = self._config["queue"]
 
@@ -56,4 +58,4 @@ class Publisher(Connection):
         LOGGER.debug('Publishing message %s to queue "%s"', json.dumps(
             message), routing_key if routing_key else exchange)
 
-        self._channel.publish(exchange, routing_key, json.dumps(message))
+        self._channel.basic_publish(exchange, routing_key, json.dumps(message))

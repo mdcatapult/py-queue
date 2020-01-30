@@ -16,7 +16,7 @@ setup(name='klein_queue',
       package_dir={'':'src'},
       install_requires=[
           'klein_config',
-          'pika<1.0.0',
+          'pika==1.1.0',
           'requests'
       ],
       zip_safe=True)

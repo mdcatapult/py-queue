@@ -4,11 +4,12 @@
 klein_queue.rabbitmq.async.connect
 '''
 import abc
-import logging
 import json
-import pika
-from klein_config import config as common_config
+import logging
 
+import pika
+
+from klein_config import config as common_config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -42,13 +43,12 @@ class Connection():
             common_config.get("rabbitmq.password"),
             common_config.get("rabbitmq.host"),
             common_config.get("rabbitmq.port"))
-
         self._config = config
         self._connection = None
         self._channel = None
         self._closing = False
         self._connection_params = pika.URLParameters(self._url)
-        self._connection_params._virtual_host = common_config.get("rabbitmq.vhost","/")
+        self._connection_params._virtual_host = common_config.get("rabbitmq.vhost", "/")
         self._connection_params.socket_timeout = common_config.get(
             "rabbitmq.socket_timeout", 5)
         self._connection_params.heartbeat = common_config.get(
@@ -64,8 +64,7 @@ class Connection():
         '''
         LOGGER.debug('Connecting to %s', self._url)
         return pika.SelectConnection(self._connection_params,
-                                     self.on_connection_open,
-                                     stop_ioloop_on_close=False)
+                                     self.on_connection_open)
 
     def on_connection_open(self, unused_connection):
         # pylint: disable=unused-argument
@@ -78,6 +77,15 @@ class Connection():
         LOGGER.debug('Connection opened')
         self.add_on_connection_close_callback()
         self.open_channel()
+
+    def on_connection_open_error(self, _unused_connection, err):
+        """This method is called by pika if the connection to RabbitMQ
+        can't be established.
+        :param pika.SelectConnection _unused_connection: The connection
+        :param Exception err: The error
+        """
+        LOGGER.error('Connection open failed, reopening in 5 seconds: %s', err)
+        self._connection.ioloop.call_later(5, self._connection.ioloop.stop)
 
     def add_on_connection_close_callback(self):
         '''
@@ -96,7 +104,7 @@ class Connection():
         if self._closing:
             self._connection.ioloop.stop()
         else:
-            self._connection.add_timeout(5, self.reconnect)
+            self._connection.ioloop.call_later(5, self.reconnect)
 
     def reconnect(self):
         '''
@@ -138,7 +146,7 @@ class Connection():
         LOGGER.debug('Adding channel close callback')
         self._channel.add_on_close_callback(self.on_channel_closed)
 
-    def on_channel_closed(self, channel, reply_code, reply_text):
+    def on_channel_closed(self, channel, reason):
         # pylint: disable=unused-argument
         '''
         if channel closed then log and close connection
@@ -165,7 +173,7 @@ class Connection():
                     ex_type = ex["type"]
 
                 self._channel.exchange_declare(
-                    self.on_exchange_declareok, ex_name, ex_type)
+                    ex_name, ex_type, callback=self.on_exchange_declareok)
         else:
             self.setup_queue()
 
@@ -182,7 +190,7 @@ class Connection():
         declare queue with rabbitmq, ensuring durability
         '''
         LOGGER.debug('Declaring queue %s', self._config["queue"])
-        self._channel.queue_declare(self.on_queue_declareok,
+        self._channel.queue_declare(callback=self.on_queue_declareok,
                                     queue=self._config["queue"],
                                     durable=True,
                                     exclusive=False,
@@ -208,7 +216,7 @@ class Connection():
                     ex_name = ex["name"]
 
                 self._channel.queue_bind(
-                    self.on_bindok, self._config["queue"], ex_name)
+                    self._config["queue"], ex_name, callback=self.on_bindok)
         else:
             self.start_activity()
 
@@ -260,7 +268,7 @@ class Connection():
 
     def run(self):
         '''
-        start connectoin and ioloop
+        start connection and ioloop
         '''
         self._connection = self.connect()
         self._connection.ioloop.start()

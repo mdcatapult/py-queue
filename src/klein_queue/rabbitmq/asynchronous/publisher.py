@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=import-error
+import json
 import logging
 from collections import deque
-import json
-import pika
-from .connect import Connection
 
+import pika
+
+from .connect import Connection
 
 LOGGER = logging.getLogger(__name__)
 
@@ -58,8 +59,8 @@ class Publisher(Connection):
 
         LOGGER.debug('Schedueling next message for %0.1f seconds',
                      self._publish_interval)
-        self._connection.add_timeout(self._publish_interval,
-                                     self.publish_message)
+        self._connection.ioloop.call_later(self._publish_interval,
+                                           self.publish_message)
 
     def publish_message(self):
         if self._stopping:
