@@ -3,13 +3,35 @@
 '''
 klein_queue.rabbitmq.sync.connect
 '''
-import logging
 import json
+import logging
+import random
+
 import pika
+
 from klein_config import config as common_config
 
-
 LOGGER = logging.getLogger(__name__)
+
+
+def get_url_parameters(host):
+    url = 'amqp://%s:%s@%s:%s/' % (
+        common_config.get("rabbitmq.username"),
+        common_config.get("rabbitmq.password"),
+        host,
+        common_config.get("rabbitmq.port"))
+    connection_params = pika.URLParameters(url)
+    connection_params._virtual_host = common_config.get("rabbitmq.vhost", "/")
+    connection_params.socket_timeout = common_config.get(
+        "rabbitmq.socket_timeout", 5)
+    connection_params.heartbeat = common_config.get(
+        "rabbitmq.heartbeat", 120)
+    connection_params.blocked_connection_timeout = common_config.get(
+        "rabbitmq.blocked_connection_timeout", 300)
+    connection_params.retry_delay = common_config.get(
+        "rabbitmq.retry_delay", 10)
+
+    return connection_params
 
 
 class Connection():
@@ -21,36 +43,43 @@ class Connection():
         '''
         initialise connection parameters and reset internal vars
         '''
-        self._url = 'amqp://%s:%s@%s:%s/' % (
-            common_config.get("rabbitmq.username"),
-            common_config.get("rabbitmq.password"),
-            common_config.get("rabbitmq.host"),
-            common_config.get("rabbitmq.port"))
-
+        self._connection_params = [get_url_parameters(host) for host in common_config.get("rabbitmq.host")]
         self._config = config
         self._connection = None
         self._channel = None
         self._closing = False
-        self._connection_params = pika.URLParameters(self._url)
-        self._connection_params._virtual_host = common_config.get("rabbitmq.vhost", "/")
-        self._connection_params.socket_timeout = common_config.get(
-            "rabbitmq.socket_timeout", 5)
-        self._connection_params.heartbeat = common_config.get(
-            "rabbitmq.heartbeat", 120)
-        self._connection_params.blocked_connection_timeout = common_config.get(
-            "rabbitmq.blocked_connection_timeout", 300)
-        self._connection_params.retry_delay = common_config.get(
-            "rabbitmq.retry_delay", 10)
 
     def connect(self):
         '''
         create new connection to rabbitmq server
         '''
-        if not self._connection or self._connection.is_closed:
-            LOGGER.debug('Connecting to %s', self._url)
-            self._connection = pika.BlockingConnection(self._connection_params)
-            self.open_channel()
-            self.setup_exchanges()
+
+        random.shuffle(self._connection_params)
+        for connection in self._connection_params:
+            try:
+                if not self._connection or self._connection.is_closed:
+                    self._connection = pika.BlockingConnection(connection)
+                    self.open_channel()
+                    self.setup_exchanges()
+                    break
+
+            except pika.exceptions.ConnectionClosedByBroker:
+                LOGGER.debug("Connection was closed by broker")
+                # Uncomment this to make the example not attempt recovery
+                # from server-initiated connection closure, including
+                # when the node is stopped cleanly
+                #
+                # break
+                continue
+
+            except pika.exceptions.AMQPChannelError as err:
+                LOGGER.debug("Caught a channel error: {}, stopping...".format(err))
+                break
+
+            # Recover on all other connection errors
+            except pika.exceptions.AMQPConnectionError:
+                LOGGER.debug("Connection was closed, retrying...")
+                continue
 
     def open_channel(self):
         '''
@@ -96,7 +125,7 @@ class Connection():
                                         auto_delete=False,
                                         arguments={
                                             "queue-mode": "lazy"
-            })
+                                        })
             self.bind_to_exchange()
 
     def bind_to_exchange(self):

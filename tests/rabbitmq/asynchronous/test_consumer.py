@@ -9,3 +9,4 @@ def test_connection():
     from src.klein_queue.rabbitmq.asynchronous.connect import Connection
     c = Connection(config={})
     c.connect()
+    assert c._channel.isopen is True

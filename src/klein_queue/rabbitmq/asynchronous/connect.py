@@ -6,6 +6,7 @@ klein_queue.rabbitmq.async.connect
 import abc
 import json
 import logging
+import random
 
 import pika
 
@@ -29,6 +30,26 @@ def blocking(config):
     return pika.BlockingConnection(params)
 
 
+def get_url_parameters(host):
+    url = 'amqp://%s:%s@%s:%s/' % (
+        common_config.get("rabbitmq.username"),
+        common_config.get("rabbitmq.password"),
+        host,
+        common_config.get("rabbitmq.port"))
+    connection_params = pika.URLParameters(url)
+    connection_params._virtual_host = common_config.get("rabbitmq.vhost", "/")
+    connection_params.socket_timeout = common_config.get(
+        "rabbitmq.socket_timeout", 5)
+    connection_params.heartbeat = common_config.get(
+        "rabbitmq.heartbeat", 120)
+    connection_params.blocked_connection_timeout = common_config.get(
+        "rabbitmq.blocked_connection_timeout", 300)
+    connection_params.retry_delay = common_config.get(
+        "rabbitmq.retry_delay", 10)
+
+    return connection_params
+
+
 class Connection():
     '''
     Base connection class for publisher and consumer to inherit from
@@ -38,33 +59,34 @@ class Connection():
         '''
         initialise connection parameters and reset internal vars
         '''
-        self._url = 'amqp://%s:%s@%s:%s/' % (
-            common_config.get("rabbitmq.username"),
-            common_config.get("rabbitmq.password"),
-            common_config.get("rabbitmq.host"),
-            common_config.get("rabbitmq.port"))
+
+        self._connection_params = [get_url_parameters(host) for host in common_config.get("rabbitmq.host")]
         self._config = config
         self._connection = None
         self._channel = None
         self._closing = False
-        self._connection_params = pika.URLParameters(self._url)
-        self._connection_params._virtual_host = common_config.get("rabbitmq.vhost", "/")
-        self._connection_params.socket_timeout = common_config.get(
-            "rabbitmq.socket_timeout", 5)
-        self._connection_params.heartbeat = common_config.get(
-            "rabbitmq.heartbeat", 120)
-        self._connection_params.blocked_connection_timeout = common_config.get(
-            "rabbitmq.blocked_connection_timeout", 300)
-        self._connection_params.retry_delay = common_config.get(
-            "rabbitmq.retry_delay", 10)
 
     def connect(self):
         '''
         create new connection to rabbitmq server
         '''
-        LOGGER.debug('Connecting to %s', self._url)
-        return pika.SelectConnection(self._connection_params,
-                                     self.on_connection_open)
+        random.shuffle(self._connection_params)
+        for connection in self._connection_params:
+            try:
+                return pika.SelectConnection(connection, self.on_connection_open)
+
+            except pika.exceptions.ConnectionClosedByBroker:
+                print('Connection closed by broker')
+                continue
+
+            except pika.exceptions.AMQPChannelError as err:
+                print("Caught a channel error: {}, stopping...".format(err))
+                break
+
+            # Recover on all other connection errors
+            except pika.exceptions.AMQPConnectionError:
+                print("Connection was closed, retrying...")
+                continue
 
     def on_connection_open(self, unused_connection):
         # pylint: disable=unused-argument
