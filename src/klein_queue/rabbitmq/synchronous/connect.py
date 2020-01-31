@@ -73,7 +73,7 @@ class Connection():
                 continue
 
             except pika.exceptions.AMQPChannelError as err:
-                LOGGER.debug("Caught a channel error: {}, stopping...".format(err))
+                LOGGER.debug("Caught a channel error: %s, stopping...", err)
                 break
 
             # Recover on all other connection errors

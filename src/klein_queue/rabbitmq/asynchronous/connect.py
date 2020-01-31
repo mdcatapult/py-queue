@@ -60,7 +60,10 @@ class Connection():
         initialise connection parameters and reset internal vars
         '''
 
-        self._connection_params = [get_url_parameters(host) for host in common_config.get("rabbitmq.host")]
+        if isinstance(common_config.get("rabbitmq.host"), str):
+            self._connection_params = [get_url_parameters(common_config.get("rabbitmq.host"))]
+        else:
+            self._connection_params = [get_url_parameters(host) for host in common_config.get("rabbitmq.host")]
         self._config = config
         self._connection = None
         self._channel = None
@@ -70,10 +73,12 @@ class Connection():
         '''
         create new connection to rabbitmq server
         '''
+
         random.shuffle(self._connection_params)
+
         for connection in self._connection_params:
             try:
-                return pika.SelectConnection(connection, self.on_connection_open)
+                return pika.SelectConnection(parameters=connection, on_open_callback=self.on_connection_open)
 
             except pika.exceptions.ConnectionClosedByBroker:
                 print('Connection closed by broker')
@@ -212,8 +217,8 @@ class Connection():
         declare queue with rabbitmq, ensuring durability
         '''
         LOGGER.debug('Declaring queue %s', self._config["queue"])
-        self._channel.queue_declare(callback=self.on_queue_declareok,
-                                    queue=self._config["queue"],
+        self._channel.queue_declare(queue=self._config["queue"],
+                                    callback=self.on_queue_declareok,
                                     durable=True,
                                     exclusive=False,
                                     auto_delete=False,
