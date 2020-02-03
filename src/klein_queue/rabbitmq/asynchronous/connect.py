@@ -121,7 +121,7 @@ class Connection():
         LOGGER.debug('Adding connection close callback')
         self._connection.add_on_close_callback(self.on_connection_closed)
 
-    def on_connection_closed(self, connection, reply_code, reply_text):
+    def on_connection_closed(self, connection, reason):
         # pylint: disable=unused-argument
         '''
         when connection closed intentionally stop the ioloop
@@ -303,6 +303,7 @@ class Connection():
             try:
                 self._connection = self.connect()
                 self._connection.ioloop.start()
+
             except KeyboardInterrupt:
                 self.stop()
                 if (self._connection is not None and

@@ -13,10 +13,14 @@ class Consumer(Connection):
     Consumer class
     '''
 
-    def __init__(self, config, handler_fn):
+    def __init__(self, config, handler_fn=None):
+
         self._handler_fn = handler_fn
         self._consumer_tag = None
         super().__init__(config)
+
+    def set_handler(self, handler_fn):
+        self._handler_fn = handler_fn
 
     def start_activity(self):
         LOGGER.debug('Issuing consumer related RPC commands')

@@ -1,4 +1,5 @@
 import argparse
+import sys
 import threading
 
 import mock
@@ -34,32 +35,30 @@ class TestConsumer:
                 return_value=(argparse.Namespace(config="dummy.yml", common=None), argparse.Namespace()))
     @mock.patch('builtins.open', new_callable=mock.mock_open, read_data=yamlString)
     def test_consumption(self, mock_open, mock_args):
+        def handle_handle(cons):
+            def handler_fn(msg, **kwargs):
+                assert msg == {'msg': 'test_message'}
+                cons.stop_activity()
+                sys.exit(-1)
 
-        def handler_fn(msg, **kwargs):
-            assert msg == {'msg': 'test_message'}
-            raise CustomThrowable
+            return handler_fn
 
         from klein_config.config import EnvironmentAwareConfig
         config = EnvironmentAwareConfig()
         mock_open.assert_called_with('dummy.yml', 'r')
 
+        from src.klein_queue.rabbitmq.asynchronous.consumer import Consumer
+        consumer = Consumer(config.get('consumer'))
+        consumer.set_handler(handle_handle(consumer))
+
         # spin out into new thread
         def consume():
-            try:
-                from src.klein_queue.rabbitmq.asynchronous.consumer import Consumer
-                consumer = Consumer(config.get('consumer'), handler_fn)
-                consumer.run()
-            except CustomThrowable:
-                assert True
-
-        def publish():
-            from src.klein_queue.rabbitmq.asynchronous.publisher import Publisher
-            publisher = Publisher(config.get('consumer'))
-            publisher.add({'msg': 'test_message'})
-            publisher.run()
+            consumer.run()
 
         c = threading.Thread(target=consume)
-        p = threading.Thread(target=publish)
-
         c.start()
-        p.start()
+
+        from src.klein_queue.rabbitmq.synchronous.publisher import Publisher
+        publisher = Publisher(config.get('consumer'))
+        publisher.connect()
+        publisher.publish_message({'msg': 'test_message'})
