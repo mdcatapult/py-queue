@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+import datetime
 
 from klein_config import config as common_config
 from .connect import Connection
+from ..synchronous.publisher import Publisher
 
 LOGGER = logging.getLogger(__name__)
+
+
+class DoclibError(Exception):
+    '''
+    Doclib Error Class
+    '''
 
 
 class Consumer(Connection):
@@ -13,10 +21,16 @@ class Consumer(Connection):
     Consumer class
     '''
 
-    def __init__(self, config, handler_fn=None):
+    def __init__(self, config, handler_fn=None, error_queue=None):
 
         self._handler_fn = handler_fn
         self._consumer_tag = None
+        if error_queue is not None:
+            self._error_publisher = Publisher(common_config.get('error'))
+        else:
+            self._error_publisher = Publisher(error_queue)
+        self._error_publisher.connect()
+
         super().__init__(config)
 
     def set_handler(self, handler_fn):
@@ -51,6 +65,22 @@ class Consumer(Connection):
                 body), basic_deliver=basic_deliver, properties=properties)
         except (json.decoder.JSONDecodeError, json.JSONDecodeError) as err:
             LOGGER.error("unable to process message %s : %s", body, str(err))
+
+        except DoclibError:
+            msg = {
+                "consumer": properties.get("x-consumer"),
+                "datetime": datetime.datetime.now(),
+                "exception": properties.get('x-exception'),
+                "message": properties.get("x-message"),
+                "queue": properties.get("x-queue"),
+                "payload": body,
+                "trace": list(properties.get("x-stack-trace").split("\n")),
+                "originalExchange": properties.get("x-original-exchange"),
+                "originalRoutingKey": properties.get("x-original-routing-key")
+            }
+
+            self._error_publisher.publish(msg)
+            self.acknowledge_message(basic_deliver.delivery_tag)
 
         if result is not None and callable(result):
             result(self, channel, basic_deliver, properties)

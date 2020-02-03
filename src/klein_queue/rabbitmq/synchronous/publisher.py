@@ -38,10 +38,6 @@ class Publisher(Connection):
                 'Publisher currently stopping, unable to publish messages at this time')
             return
 
-        # properties = pika.BasicProperties(app_id='klein-consumer',
-        #                                   content_type='application/json',
-        #                                   headers=message)
-
         routing_key = ''
         exchange = ''
 
