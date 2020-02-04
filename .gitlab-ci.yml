@@ -7,7 +7,7 @@ cache:
     - .cache/pip
     - venv/
 
-stages: 
+stages:
   - test
   - publish
 

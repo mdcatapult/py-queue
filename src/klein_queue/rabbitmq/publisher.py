@@ -3,8 +3,11 @@
 klein_queue.rabbitmq.publisher
 '''
 import logging
+
 import pika.exceptions
+
 from klein_config import config
+from .asynchronous.consumer import DoclibError
 from .synchronous.publisher import Publisher
 
 LOGGER = logging.getLogger(__name__)
@@ -61,6 +64,13 @@ def publish(message):
     DOWNSTREAM.publish(message)
 
 
+def supervise(message):
+    if not SUPERVISOR:
+        raise EnvironmentError(
+            "No supervisor has been configured for publishing")
+    SUPERVISOR.publish(message)
+
+
 def requeue(message):
     '''
     publish message to same queue being consumed
@@ -77,13 +87,4 @@ def error(message):
     '''
     if not ERROR:
         raise EnvironmentError("No error has been configured for publishing")
-    ERROR.publish(message)
-
-
-def supervise(message):
-    '''
-    publish message to supervisor queue
-    '''
-    if not SUPERVISOR:
-        raise EnvironmentError("No error has been configured for publishing")
-    SUPERVISOR.publish(message)
+    raise DoclibError(message)

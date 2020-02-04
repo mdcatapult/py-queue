@@ -3,15 +3,18 @@
 '''
 klein_queue.rabbitmq.sync.connect
 '''
-import logging
 import json
+import logging
+
 import pika
+
 from klein_config import config as common_config
+from ..util import get_url_parameters
 
 LOGGER = logging.getLogger(__name__)
 
 
-class Connection():
+class Connection:
     '''
     Base connection for consumers and publisher to inherit
     '''
@@ -20,43 +23,42 @@ class Connection():
         '''
         initialise connection parameters and reset internal vars
         '''
-        if common_config.get("rabbitmq.ssl", False):
-            self._url = 'https://%s:%s@%s:%s/' % (
-                common_config.get("rabbitmq.username"),
-                common_config.get("rabbitmq.password"),
-                common_config.get("rabbitmq.host"),
-                common_config.get("rabbitmq.port"))
-        else:
-            self._url = 'amqp://%s:%s@%s:%s/' % (
-                common_config.get("rabbitmq.username"),
-                common_config.get("rabbitmq.password"),
-                common_config.get("rabbitmq.host"),
-                common_config.get("rabbitmq.port"))
-
+        self._connection_params = get_url_parameters(common_config)
         self._config = config
         self._connection = None
         self._channel = None
         self._closing = False
-        self._connection_params = pika.URLParameters(self._url)
-        self._connection_params._virtual_host = common_config.get("rabbitmq.vhost", "/")
-        self._connection_params.socket_timeout = common_config.get(
-            "rabbitmq.socket_timeout", 5)
-        self._connection_params.heartbeat = common_config.get(
-            "rabbitmq.heartbeat", 120)
-        self._connection_params.blocked_connection_timeout = common_config.get(
-            "rabbitmq.blocked_connection_timeout", 300)
-        self._connection_params.retry_delay = common_config.get(
-            "rabbitmq.retry_delay", 10)
 
     def connect(self):
         '''
         create new connection to rabbitmq server
         '''
-        if not self._connection or self._connection.is_closed:
-            LOGGER.debug('Connecting to %s', self._url)
-            self._connection = pika.BlockingConnection(self._connection_params)
-            self.open_channel()
-            self.setup_exchanges()
+
+        for connection in self._connection_params:
+            try:
+                if not self._connection or self._connection.is_closed:
+                    self._connection = pika.BlockingConnection(connection)
+                    self.open_channel()
+                    self.setup_exchanges()
+                    break
+
+            except pika.exceptions.ConnectionClosedByBroker:
+                LOGGER.debug("Connection was closed by broker")
+                # Uncomment this to make the example not attempt recovery
+                # from server-initiated connection closure, including
+                # when the node is stopped cleanly
+                #
+                # break
+                continue
+
+            except pika.exceptions.AMQPChannelError as err:
+                LOGGER.debug("Caught a channel error: %s, stopping...", err)
+                break
+
+            # Recover on all other connection errors
+            except pika.exceptions.AMQPConnectionError:
+                LOGGER.debug("Connection was closed, retrying...")
+                continue
 
     def open_channel(self):
         '''
