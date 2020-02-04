@@ -4,11 +4,13 @@
 klein_queue.rabbitmq.async.connect
 '''
 import abc
-import logging
 import json
-import pika
-from klein_config import config as common_config
+import logging
 
+import pika
+
+from klein_config import config as common_config
+from ..util import get_url_parameters
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ def blocking(config):
     return pika.BlockingConnection(params)
 
 
-class Connection():
+class Connection:
     '''
     Base connection class for publisher and consumer to inherit from
     '''
@@ -37,35 +39,33 @@ class Connection():
         '''
         initialise connection parameters and reset internal vars
         '''
-        self._url = 'amqp://%s:%s@%s:%s/' % (
-            common_config.get("rabbitmq.username"),
-            common_config.get("rabbitmq.password"),
-            common_config.get("rabbitmq.host"),
-            common_config.get("rabbitmq.port"))
-
+        self._connection_params = get_url_parameters(common_config)
         self._config = config
         self._connection = None
         self._channel = None
         self._closing = False
-        self._connection_params = pika.URLParameters(self._url)
-        self._connection_params._virtual_host = common_config.get("rabbitmq.vhost","/")
-        self._connection_params.socket_timeout = common_config.get(
-            "rabbitmq.socket_timeout", 5)
-        self._connection_params.heartbeat = common_config.get(
-            "rabbitmq.heartbeat", 120)
-        self._connection_params.blocked_connection_timeout = common_config.get(
-            "rabbitmq.blocked_connection_timeout", 300)
-        self._connection_params.retry_delay = common_config.get(
-            "rabbitmq.retry_delay", 10)
 
     def connect(self):
         '''
         create new connection to rabbitmq server
         '''
-        LOGGER.debug('Connecting to %s', self._url)
-        return pika.SelectConnection(self._connection_params,
-                                     self.on_connection_open,
-                                     stop_ioloop_on_close=False)
+
+        for connection in self._connection_params:
+            try:
+                return pika.SelectConnection(parameters=connection, on_open_callback=self.on_connection_open)
+
+            except pika.exceptions.ConnectionClosedByBroker:
+                print('Connection closed by broker')
+                continue
+
+            except pika.exceptions.AMQPChannelError as err:
+                print("Caught a channel error: {}, stopping...".format(err))
+                break
+
+            # Recover on all other connection errors
+            except pika.exceptions.AMQPConnectionError:
+                print("Connection was closed, retrying...")
+                continue
 
     def on_connection_open(self, unused_connection):
         # pylint: disable=unused-argument
@@ -79,6 +79,15 @@ class Connection():
         self.add_on_connection_close_callback()
         self.open_channel()
 
+    def on_connection_open_error(self, _unused_connection, err):
+        """This method is called by pika if the connection to RabbitMQ
+        can't be established.
+        :param pika.SelectConnection _unused_connection: The connection
+        :param Exception err: The error
+        """
+        LOGGER.error('Connection open failed, reopening in 5 seconds: %s', err)
+        self._connection.ioloop.call_later(5, self._connection.ioloop.stop)
+
     def add_on_connection_close_callback(self):
         '''
         attaches on_connection_closed callback to close of connection
@@ -86,7 +95,7 @@ class Connection():
         LOGGER.debug('Adding connection close callback')
         self._connection.add_on_close_callback(self.on_connection_closed)
 
-    def on_connection_closed(self, connection, reply_code, reply_text):
+    def on_connection_closed(self, connection, reason):
         # pylint: disable=unused-argument
         '''
         when connection closed intentionally stop the ioloop
@@ -96,7 +105,7 @@ class Connection():
         if self._closing:
             self._connection.ioloop.stop()
         else:
-            self._connection.add_timeout(5, self.reconnect)
+            self._connection.ioloop.call_later(5, self.reconnect)
 
     def reconnect(self):
         '''
@@ -138,7 +147,7 @@ class Connection():
         LOGGER.debug('Adding channel close callback')
         self._channel.add_on_close_callback(self.on_channel_closed)
 
-    def on_channel_closed(self, channel, reply_code, reply_text):
+    def on_channel_closed(self, channel, reason):
         # pylint: disable=unused-argument
         '''
         if channel closed then log and close connection
@@ -165,7 +174,7 @@ class Connection():
                     ex_type = ex["type"]
 
                 self._channel.exchange_declare(
-                    self.on_exchange_declareok, ex_name, ex_type)
+                    ex_name, ex_type, callback=self.on_exchange_declareok)
         else:
             self.setup_queue()
 
@@ -182,8 +191,8 @@ class Connection():
         declare queue with rabbitmq, ensuring durability
         '''
         LOGGER.debug('Declaring queue %s', self._config["queue"])
-        self._channel.queue_declare(self.on_queue_declareok,
-                                    queue=self._config["queue"],
+        self._channel.queue_declare(queue=self._config["queue"],
+                                    callback=self.on_queue_declareok,
                                     durable=True,
                                     exclusive=False,
                                     auto_delete=False,
@@ -208,7 +217,7 @@ class Connection():
                     ex_name = ex["name"]
 
                 self._channel.queue_bind(
-                    self.on_bindok, self._config["queue"], ex_name)
+                    self._config["queue"], ex_name, callback=self.on_bindok)
         else:
             self.start_activity()
 
@@ -260,7 +269,7 @@ class Connection():
 
     def run(self):
         '''
-        start connectoin and ioloop
+        start connection and ioloop
         '''
         self._connection = self.connect()
         self._connection.ioloop.start()
@@ -268,6 +277,7 @@ class Connection():
             try:
                 self._connection = self.connect()
                 self._connection.ioloop.start()
+
             except KeyboardInterrupt:
                 self.stop()
                 if (self._connection is not None and

@@ -3,14 +3,19 @@
 klein_queue.rabbitmq.publisher
 '''
 import logging
+
 import pika.exceptions
+
 from klein_config import config
+from .asynchronous.consumer import DoclibError
 from .synchronous.publisher import Publisher
 
 LOGGER = logging.getLogger(__name__)
 DOWNSTREAM = None
 UPSTREAM = None
 ERROR = None
+SUPERVISOR = None
+
 
 def c(q):
     success = False
@@ -22,6 +27,7 @@ def c(q):
         LOGGER.debug("QUEUE: Connection Failed for %s", q._url if hasattr(q, "_url") else "unknown")
         success = False
     return success
+
 
 if config.has("publisher"):
     DOWNSTREAM = Publisher(config.get("publisher"))
@@ -41,6 +47,12 @@ if config.has("error"):
     while not connected:
         connected = c(ERROR)
 
+if config.has("supervisor"):
+    SUPERVISOR = Publisher(config.get('supervisor'))
+    connected = False
+    while not connected:
+        connected = c(SUPERVISOR)
+
 
 def publish(message):
     '''
@@ -50,6 +62,13 @@ def publish(message):
         raise EnvironmentError(
             "No downstream has been configured for publishing")
     DOWNSTREAM.publish(message)
+
+
+def supervise(message):
+    if not SUPERVISOR:
+        raise EnvironmentError(
+            "No supervisor has been configured for publishing")
+    SUPERVISOR.publish(message)
 
 
 def requeue(message):
@@ -68,4 +87,4 @@ def error(message):
     '''
     if not ERROR:
         raise EnvironmentError("No error has been configured for publishing")
-    ERROR.publish(message)
+    raise DoclibError(message)
