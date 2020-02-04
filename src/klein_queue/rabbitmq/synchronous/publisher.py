@@ -23,16 +23,16 @@ class Publisher(Connection):
     def __call__(self, message):
         self.publish(message)
 
-    def publish(self, message):
+    def publish(self, message, properties=None):
         try:
-            self.publish_message(message)
+            self.publish_message(message, properties)
         except (pika.exceptions.ConnectionClosed, pika.exceptions.ChannelClosed) as err:
             LOGGER.debug('reconnecting to queue')
             print('reconnecting to queue', err)
             self.connect()
-            self.publish_message(message)
+            self.publish_message(message, properties)
 
-    def publish_message(self, message):
+    def publish_message(self, message, properties=None):
         if self._closing:
             LOGGER.debug(
                 'Publisher currently stopping, unable to publish messages at this time')
@@ -54,4 +54,4 @@ class Publisher(Connection):
         LOGGER.debug('Publishing message %s to queue "%s"', json.dumps(
             message), routing_key if routing_key else exchange)
 
-        self._channel.basic_publish(exchange, routing_key, json.dumps(message))
+        self._channel.basic_publish(exchange, routing_key, json.dumps(message), properties)

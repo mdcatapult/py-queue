@@ -23,7 +23,7 @@ def nack(msg):
 
 def ack(msg):
     '''
-    Convenience currid function to Acknowledge message
+    Convenience curried function to Acknowledge message
     '''
 
     def handle(consumer, channel, envelope, properties):
@@ -36,7 +36,7 @@ def ack(msg):
 
 def nackError(err):
     '''
-    Convenience currid function to Negative Acknowledge message with error
+    Convenience curried function to Negative Acknowledge message with error
     '''
 
     def handle(consumer, channel, basic_deliver, properties):

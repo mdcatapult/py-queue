@@ -1,5 +1,5 @@
 klein_config
-pika==1.1.0
+pika>=1.1.0
 pytest
 pytest-cov
 mock

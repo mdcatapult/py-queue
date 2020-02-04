@@ -3,6 +3,8 @@ import json
 import logging
 import datetime
 
+import pika
+
 from klein_config import config as common_config
 from .connect import Connection
 from ..synchronous.publisher import Publisher
@@ -21,14 +23,14 @@ class Consumer(Connection):
     Consumer class
     '''
 
-    def __init__(self, config, handler_fn=None, error_queue=None):
+    def __init__(self, config, handler_fn=None):
 
         self._handler_fn = handler_fn
         self._consumer_tag = None
-        if error_queue is not None:
+        if config.get('error') is None:
             self._error_publisher = Publisher(common_config.get('error'))
         else:
-            self._error_publisher = Publisher(error_queue)
+            self._error_publisher = Publisher(config.get('error'))
         self._error_publisher.connect()
 
         super().__init__(config)
@@ -67,19 +69,18 @@ class Consumer(Connection):
             LOGGER.error("unable to process message %s : %s", body, str(err))
 
         except DoclibError:
-            msg = {
+            headers = {
                 "consumer": properties.get("x-consumer"),
                 "datetime": datetime.datetime.now(),
                 "exception": properties.get('x-exception'),
                 "message": properties.get("x-message"),
                 "queue": properties.get("x-queue"),
-                "payload": body,
                 "trace": list(properties.get("x-stack-trace").split("\n")),
                 "originalExchange": properties.get("x-original-exchange"),
                 "originalRoutingKey": properties.get("x-original-routing-key")
             }
 
-            self._error_publisher.publish(msg)
+            self._error_publisher.publish(body, pika.BasicProperties(headers=headers, content_type='application/json'))
             self.acknowledge_message(basic_deliver.delivery_tag)
 
         if result is not None and callable(result):

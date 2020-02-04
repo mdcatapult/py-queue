@@ -17,12 +17,13 @@ consumer:
   auto_acknowledge: true
   prefetch: 1
   create_on_connect: true
-
+  error: error
+  
 publisher:
   queue: publish
-  
+
 error:
-  queue: errors
+  queue: error
 """
 
 
@@ -48,7 +49,7 @@ class TestErrorPublisher:
         mock_open.assert_called_with('dummy.yml', 'r')
 
         from src.klein_queue.rabbitmq.asynchronous.consumer import Consumer, DoclibError
-        consumer = Consumer(config.get('consumer'), error_queue=config.get('error.queue'))
+        consumer = Consumer(config.get('consumer'))
         consumer.set_handler(handle_handle(consumer))
 
         # spin out into new thread
@@ -58,8 +59,7 @@ class TestErrorPublisher:
         c = threading.Thread(target=consume)
         c.start()
 
-        from src.klein_queue.rabbitmq.publisher import Publisher, error
-
+        from src.klein_queue.rabbitmq.publisher import error
         with pytest.raises(DoclibError) as exc_info:
             error('oh dear')
             assert True is True

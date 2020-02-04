@@ -30,27 +30,35 @@ def blocking(config):
     return pika.BlockingConnection(params)
 
 
-def get_url_parameters(host):
-    url = 'amqp://%s:%s@%s:%s/' % (
-        common_config.get("rabbitmq.username"),
-        common_config.get("rabbitmq.password"),
-        host,
-        common_config.get("rabbitmq.port"))
-    connection_params = pika.URLParameters(url)
-    connection_params._virtual_host = common_config.get("rabbitmq.vhost", "/")
-    connection_params.socket_timeout = common_config.get(
-        "rabbitmq.socket_timeout", 5)
-    connection_params.heartbeat = common_config.get(
-        "rabbitmq.heartbeat", 120)
-    connection_params.blocked_connection_timeout = common_config.get(
-        "rabbitmq.blocked_connection_timeout", 300)
-    connection_params.retry_delay = common_config.get(
-        "rabbitmq.retry_delay", 10)
+def get_url_parameters(conf):
+    conns = []
+    if isinstance(common_config.get("rabbitmq.host"), str):
+        conf["rabbitmq.host"] = list(conf.get("rabbitmq.host"))
 
-    return connection_params
+    random.shuffle(conf.get("rabbitmq.host"))
+
+    for ii in range(len(conf.get("rabbitmq.host"))):
+        url = 'amqp://%s:%s@%s:%s/' % (
+            conf.get("rabbitmq.username"),
+            conf.get("rabbitmq.password"),
+            conf.get("rabbitmq.host")[ii],
+            conf.get("rabbitmq.port"))
+        connection_params = pika.URLParameters(url)
+        connection_params._virtual_host = conf.get("rabbitmq.vhost", "/")
+        connection_params.socket_timeout = conf.get(
+            "rabbitmq.socket_timeout", 5)
+        connection_params.heartbeat = conf.get(
+            "rabbitmq.heartbeat", 120)
+        connection_params.blocked_connection_timeout = conf.get(
+            "rabbitmq.blocked_connection_timeout", 300)
+        connection_params.retry_delay = conf.get(
+            "rabbitmq.retry_delay", 10)
+        conns.append(connection_params)
+
+    return conns
 
 
-class Connection():
+class Connection:
     '''
     Base connection class for publisher and consumer to inherit from
     '''
@@ -59,11 +67,7 @@ class Connection():
         '''
         initialise connection parameters and reset internal vars
         '''
-
-        if isinstance(common_config.get("rabbitmq.host"), str):
-            self._connection_params = [get_url_parameters(common_config.get("rabbitmq.host"))]
-        else:
-            self._connection_params = [get_url_parameters(host) for host in common_config.get("rabbitmq.host")]
+        self._connection_params = get_url_parameters(common_config)
         self._config = config
         self._connection = None
         self._channel = None
@@ -73,8 +77,6 @@ class Connection():
         '''
         create new connection to rabbitmq server
         '''
-
-        random.shuffle(self._connection_params)
 
         for connection in self._connection_params:
             try:
