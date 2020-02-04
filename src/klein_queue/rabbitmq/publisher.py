@@ -14,6 +14,8 @@ LOGGER = logging.getLogger(__name__)
 DOWNSTREAM = None
 UPSTREAM = None
 ERROR = None
+SUPERVISOR = None
+
 
 
 def c(q):
@@ -45,6 +47,12 @@ if config.has("error"):
     connected = False
     while not connected:
         connected = c(ERROR)
+
+if config.has("supervisor"):
+    SUPERVISOR = Publisher(config.get('supervisor'))
+    connected = False
+    while not connected:
+        connected = c(SUPERVISOR)
 
 
 def publish(message):

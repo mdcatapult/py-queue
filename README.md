@@ -5,20 +5,21 @@ Module to abstract queues. Currently only implements RabbitMQ, roadmap to includ
 ## Environment Variables
 
 
-| Env Variable                        | Description |
-|-------------------------------------|-------------|
-| RABBITMQ_USERNAME                   |             |
-| RABBITMQ_PASSWORD                   |             |
-| RABBITMQ_HOST                       |             |
-| RABBITMQ_PORT                       |             |
-| RABBITMQ_VHOST                      |             |
-| RABBITMQ_SOCKET_TIMEOUT             |             |
-| RABBITMQ_HEARTBEAT                  |             |
-| RABBITMQ_BLOCKED_CONNECTION_TIMEOUT |             |
-| RABBITMQ_RETRY_DELAY                |             |
-| RABBITMQ_PUBLISHER                  |             |
-| RABBITMQ_CONSUMER                   |             |
-| RABBITMQ_ERROR                      |             |
+| Env Variable                        | Description                                                    |
+|-------------------------------------|-------------                                                |
+| RABBITMQ_USERNAME                   |                                                             |
+| RABBITMQ_PASSWORD                   |                                                             |
+| RABBITMQ_HOST                       |                                                             |
+| RABBITMQ_PORT                       |                                                             |
+| RABBITMQ_VHOST                      | Use a VHOST instead of default of /                         |
+| RABBITMQ_SOCKET_TIMEOUT             |                                                             |
+| RABBITMQ_HEARTBEAT                  |                                                             |
+| RABBITMQ_BLOCKED_CONNECTION_TIMEOUT |                                                             |
+| RABBITMQ_RETRY_DELAY                |                                                             |
+| RABBITMQ_PUBLISHER                  |                                                             |
+| RABBITMQ_CONSUMER                   |                                                             |
+| RABBITMQ_ERROR                      |                                                             |
+| RABBITMQ_CREATE_QUEUE_ON_CONNECT    |Config to determine whether to create queue at connection    |
 
 ## Python
 
