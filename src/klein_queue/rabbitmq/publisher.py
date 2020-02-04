@@ -17,7 +17,6 @@ ERROR = None
 SUPERVISOR = None
 
 
-
 def c(q):
     success = False
     try:
@@ -63,6 +62,13 @@ def publish(message):
         raise EnvironmentError(
             "No downstream has been configured for publishing")
     DOWNSTREAM.publish(message)
+
+
+def supervise(message):
+    if not SUPERVISOR:
+        raise EnvironmentError(
+            "No supervisor has been configured for publishing")
+    SUPERVISOR.publish(message)
 
 
 def requeue(message):
