@@ -71,7 +71,7 @@ class Consumer(Connection):
 
         except KleinQueueError as kqe:
             excptn = kqe
-            if kqe.__cause__ is not None and isinstance(kqe, Exception):
+            if kqe.__cause__ is not None and isinstance(kqe._cause__, Exception):
                 excptn = kqe.__cause__
 
             headers = {
