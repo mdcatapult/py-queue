@@ -2,6 +2,7 @@
 import json
 import logging
 import datetime
+from traceback import format_tb
 
 import pika
 
@@ -9,7 +10,7 @@ from klein_config import config as common_config
 from .connect import Connection
 from ..synchronous.publisher import Publisher
 from ..util import KleinQueueError
-from traceback import format_tb
+
 LOGGER = logging.getLogger(__name__)
 
 
