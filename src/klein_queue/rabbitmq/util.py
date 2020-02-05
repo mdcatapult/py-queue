@@ -10,16 +10,18 @@ class KleinQueueError(Exception):
 
 def get_url_parameters(conf):
     conns = []
-    if isinstance(conf.get("rabbitmq.host"), str):
-        conf["rabbitmq.host"] = list(conf.get("rabbitmq.host"))
+    hosts = conf.get("rabbitmq.host")
 
-    random.shuffle(conf.get("rabbitmq.host"))
+    if isinstance(hosts, str):
+        hosts = hosts.split(",")
 
-    for ii in range(len(conf.get("rabbitmq.host"))):
+    random.shuffle(hosts)
+
+    for ii in range(len(hosts)):
         url = 'amqp://%s:%s@%s:%s/' % (
             conf.get("rabbitmq.username"),
             conf.get("rabbitmq.password"),
-            conf.get("rabbitmq.host")[ii],
+            hosts[ii],
             conf.get("rabbitmq.port"))
         connection_params = pika.URLParameters(url)
         connection_params._virtual_host = conf.get("rabbitmq.vhost", "/")
