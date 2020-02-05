@@ -2,6 +2,12 @@ import random
 import pika
 
 
+class KleinQueueError(Exception):
+    '''
+    Doclib Error Class
+    '''
+
+
 def get_url_parameters(conf):
     conns = []
     if isinstance(conf.get("rabbitmq.host"), str):

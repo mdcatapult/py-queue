@@ -7,7 +7,7 @@ import logging
 import pika.exceptions
 
 from klein_config import config
-from .asynchronous.consumer import DoclibError
+from .util import KleinQueueError
 from .synchronous.publisher import Publisher
 
 LOGGER = logging.getLogger(__name__)
@@ -87,4 +87,4 @@ def error(message):
     '''
     if not ERROR:
         raise EnvironmentError("No error has been configured for publishing")
-    raise DoclibError(message)
+    raise KleinQueueError(message)

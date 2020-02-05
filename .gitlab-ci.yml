@@ -1,6 +1,15 @@
+services:
+  - docker:dind
+  - name: rabbitmq:management
+    alias: rabbitmq
+
+
 image: python:latest
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  RABBITMQ_DEFAULT_USER: guest
+  RABBITMQ_DEFAULT_PASS: guest
+
 
 cache:
   paths:
@@ -22,10 +31,10 @@ lint:
   script:
     - pylint --rcfile=.pylintrc src
 
-# test:
-#   stage: test
-#   script:
-#     - python -m pytest
+test:
+  stage: test
+  script:
+    - python -m pytest
 
 publish-stable:
   stage: publish

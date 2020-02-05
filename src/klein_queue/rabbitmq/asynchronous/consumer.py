@@ -8,14 +8,12 @@ import pika
 from klein_config import config as common_config
 from .connect import Connection
 from ..synchronous.publisher import Publisher
+from ..util import KleinQueueError
 
 LOGGER = logging.getLogger(__name__)
 
 
-class DoclibError(Exception):
-    '''
-    Doclib Error Class
-    '''
+
 
 
 class Consumer(Connection):
@@ -68,7 +66,7 @@ class Consumer(Connection):
         except (json.decoder.JSONDecodeError, json.JSONDecodeError) as err:
             LOGGER.error("unable to process message %s : %s", body, str(err))
 
-        except DoclibError:
+        except KleinQueueError:
             headers = {
                 "consumer": properties.get("x-consumer"),
                 "datetime": datetime.datetime.now(),

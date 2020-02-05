@@ -48,7 +48,8 @@ class TestErrorPublisher:
         config = EnvironmentAwareConfig()
         mock_open.assert_called_with('dummy.yml', 'r')
 
-        from src.klein_queue.rabbitmq.asynchronous.consumer import Consumer, DoclibError
+        from src.klein_queue.rabbitmq.asynchronous.consumer import Consumer
+        from src.klein_queue.rabbitmq.util import KleinQueueError
         consumer = Consumer(config.get('consumer'))
         consumer.set_handler(handle_handle(consumer))
 
@@ -60,8 +61,8 @@ class TestErrorPublisher:
         c.start()
 
         from src.klein_queue.rabbitmq.publisher import error
-        with pytest.raises(DoclibError) as exc_info:
+        with pytest.raises(KleinQueueError) as exc_info:
             error('oh dear')
             assert True is True
 
-        assert exc_info.typename == "DoclibError"
+        assert exc_info.typename == "KleinQueueError"

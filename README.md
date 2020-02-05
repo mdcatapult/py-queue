@@ -21,6 +21,7 @@ Module to abstract queues. Currently only implements RabbitMQ, roadmap to includ
 | RABBITMQ_ERROR                      |                                                             |
 | RABBITMQ_CREATE_QUEUE_ON_CONNECT    |Config to determine whether to create queue at connection    |
 
+
 ## Python
 
 Utilises python 3.7
