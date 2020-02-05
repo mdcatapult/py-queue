@@ -22,7 +22,6 @@ class Publisher(Connection):
         self._message_number = 0
         self._stopping = False
         super().__init__(config)
-        super().__init__(config)
 
     def start_activity(self):
         LOGGER.debug('Issuing consumer related RPC commands')
