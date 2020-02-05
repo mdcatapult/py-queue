@@ -1,5 +1,4 @@
 services:
-  - docker:dind
   - name: rabbitmq:management
     alias: rabbitmq
 
