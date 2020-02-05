@@ -58,6 +58,7 @@ class TestConsumer:
 
         c = threading.Thread(target=consume)
         c.start()
+        c.join(5.0)
 
         from src.klein_queue.rabbitmq.synchronous.publisher import Publisher
         publisher = Publisher(config.get('consumer'))
