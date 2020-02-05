@@ -9,10 +9,8 @@ from klein_config import config as common_config
 from .connect import Connection
 from ..synchronous.publisher import Publisher
 from ..util import KleinQueueError
-
+from traceback import format_tb
 LOGGER = logging.getLogger(__name__)
-
-
 
 
 
@@ -22,7 +20,7 @@ class Consumer(Connection):
     '''
 
     def __init__(self, config, handler_fn=None):
-
+        self._local_config = config
         self._handler_fn = handler_fn
         self._consumer_tag = None
         if config.get('error') is None:
@@ -49,6 +47,10 @@ class Consumer(Connection):
         Pass message to consumers handler function
         If result returned from handler check to see if it is
         callable and execute otherwise acknowledge if not already done
+        channel: pika.Channel 
+        method: pika.spec.Basic.Deliver 
+        properties: pika.spec.BasicProperties 
+        body: bytes
         '''
         LOGGER.debug('Received message # %s from %s: %s',
                      basic_deliver.delivery_tag, properties.app_id, body)
@@ -66,16 +68,18 @@ class Consumer(Connection):
         except (json.decoder.JSONDecodeError, json.JSONDecodeError) as err:
             LOGGER.error("unable to process message %s : %s", body, str(err))
 
-        except KleinQueueError:
+        except KleinQueueError as kqe:
+            excptn = kqe
+            if kqe.__cause__ is not None and isinstance(kqe, Exception):
+                excptn = kqe.__cause__
+
             headers = {
-                "consumer": properties.get("x-consumer"),
-                "datetime": datetime.datetime.now(),
-                "exception": properties.get('x-exception'),
-                "message": properties.get("x-message"),
-                "queue": properties.get("x-queue"),
-                "trace": list(properties.get("x-stack-trace").split("\n")),
-                "originalExchange": properties.get("x-original-exchange"),
-                "originalRoutingKey": properties.get("x-original-routing-key")
+                "x-consumer": self._local_config["name"] if self._local_config.has("name") else "Unknown",
+                "x-datetime": datetime.datetime.now(),
+                "x-exception": type(excptn),
+                "x-message": str(excptn),
+                "x-queue": self._local_config["queue"],
+                "x-stack-trace": "\n".join(format_tb(excptn.__traceback__))
             }
 
             self._error_publisher.publish(body, pika.BasicProperties(headers=headers, content_type='application/json'))
