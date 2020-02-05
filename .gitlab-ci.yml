@@ -8,6 +8,7 @@ image: python:latest
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: 5672
   RABBITMQ_DEFAULT_USER: guest
   RABBITMQ_DEFAULT_PASS: guest
 
