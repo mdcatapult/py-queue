@@ -152,6 +152,7 @@ class Connection:
         '''
         if channel closed then log and close connection
         '''
+        LOGGER.info("connection to channel %s closed because %s", str(channel), str(reason))
         self._connection.close()
 
     def setup_exchanges(self):
