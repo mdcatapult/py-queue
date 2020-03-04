@@ -87,7 +87,7 @@ class Consumer(Connection):
 
         if result is not None and callable(result):
             result(self, channel, basic_deliver, properties)
-        elif result is not False or not auto_ack:
+        elif result is not False and not auto_ack:
             LOGGER.info("Acknowledge on completion the message # %s", basic_deliver.delivery_tag)
             self.acknowledge_message(basic_deliver.delivery_tag)
 

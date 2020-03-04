@@ -1,6 +1,4 @@
 import argparse
-import sys
-import threading
 
 import mock
 import pytest
@@ -26,7 +24,6 @@ error:
   queue: error
 """
 
-import traceback
 
 class TempThrowable(Exception):
     pass
@@ -50,5 +47,3 @@ class TestKleinQueueError:
                 assert(isinstance(ker.__cause__, TempThrowable))
                 assert(str(ker.__cause__) == "bad mojo")
                 raise ker
-        # assert exc_info.type is KleinQueueError
-        
