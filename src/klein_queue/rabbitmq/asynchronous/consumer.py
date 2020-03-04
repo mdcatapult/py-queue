@@ -14,7 +14,6 @@ from ..util import KleinQueueError
 LOGGER = logging.getLogger(__name__)
 
 
-
 class Consumer(Connection):
     '''
     Consumer class
@@ -42,14 +41,13 @@ class Consumer(Connection):
             on_message_callback=self.on_message, queue=common_config.get("consumer.queue"))
 
     def on_message(self, channel, basic_deliver, properties, body):
-        # pylint: disable=unused-argument
         '''
         On receipt of message check to see if auto acknowledge required
         Pass message to consumers handler function
         If result returned from handler check to see if it is
         callable and execute otherwise acknowledge if not already done
         channel: pika.Channel 
-        method: pika.spec.Basic.Deliver 
+        basic_deliver: pika.spec.Basic.Deliver
         properties: pika.spec.BasicProperties 
         body: bytes
         '''
@@ -59,6 +57,7 @@ class Consumer(Connection):
         auto_ack = common_config.get("consumer.auto_acknowledge", True)
 
         if auto_ack:
+            LOGGER.info("Auto-acknowledge message # %s", basic_deliver.delivery_tag)
             self.acknowledge_message(basic_deliver.delivery_tag)
 
         result = None
@@ -89,6 +88,7 @@ class Consumer(Connection):
         if result is not None and callable(result):
             result(self, channel, basic_deliver, properties)
         elif result is not False or not auto_ack:
+            LOGGER.info("Acknowledge on completion the message # %s", basic_deliver.delivery_tag)
             self.acknowledge_message(basic_deliver.delivery_tag)
 
     def stop_activity(self):
