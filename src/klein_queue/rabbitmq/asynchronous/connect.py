@@ -52,7 +52,12 @@ class Connection:
 
         for connection in self._connection_params:
             try:
-                return pika.SelectConnection(parameters=connection, on_open_callback=self.on_connection_open)
+                return pika.SelectConnection(
+                    parameters=connection,
+                    on_open_callback=self.on_connection_open,
+                    on_open_error_callback=self.on_connection_open_error,
+                    on_close_callback=self.on_connection_closed,
+                )
 
             except pika.exceptions.ConnectionClosedByBroker:
                 print('Connection closed by broker')
@@ -111,6 +116,7 @@ class Connection:
         '''
         stop ioloop and if not intentional reconnect immediately
         '''
+        LOGGER.debug('Reconnect channel: current closing state is %s', self._closing)
         self._connection.ioloop.stop()
         if not self._closing:
             self._connection = self.connect()
