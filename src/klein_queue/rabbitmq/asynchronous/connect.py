@@ -81,7 +81,6 @@ class Connection:
         '''
 
         LOGGER.debug('Connection opened')
-        self.add_on_connection_close_callback()
         self.open_channel()
 
     def on_connection_open_error(self, _unused_connection, err):
@@ -92,13 +91,6 @@ class Connection:
         """
         LOGGER.error('Connection open failed, reopening in 5 seconds: %s', err)
         self._connection.ioloop.call_later(5, self._connection.ioloop.stop)
-
-    def add_on_connection_close_callback(self):
-        '''
-        attaches on_connection_closed callback to close of connection
-        '''
-        LOGGER.debug('Adding connection close callback')
-        self._connection.add_on_close_callback(self.on_connection_closed)
 
     def on_connection_closed(self, connection, reason):
         # pylint: disable=unused-argument
@@ -158,7 +150,7 @@ class Connection:
         '''
         if channel closed then log and close connection
         '''
-        LOGGER.info("connection to channel %s closed because %s", str(channel), str(reason))
+        LOGGER.info("connection to channel %s closed because %s", channel, reason)
         self._connection.close()
 
     def setup_exchanges(self):
@@ -183,6 +175,7 @@ class Connection:
                 self._channel.exchange_declare(
                     ex_name, ex_type, callback=self.on_exchange_declareok)
         else:
+            LOGGER.debug('No exchanges to declare so setting up queue')
             self.setup_queue()
 
     def on_exchange_declareok(self, unused_frame):
