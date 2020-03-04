@@ -17,12 +17,19 @@ def get_url_parameters(conf):
 
     random.shuffle(hosts)
 
-    url = 'amqp://%s:%s@%s:%s/' % (
+    authority = '%s:%s@' % (
         conf.get("rabbitmq.username"),
-        conf.get("rabbitmq.password"),
+        conf.get("rabbitmq.password")
+    )
+    if authority == ':@':
+        authority = ''
+
+    url = 'amqp://%s%s:%s/' % (
+        authority,
         hosts[0],
         conf.get("rabbitmq.port"))
     connection_params = pika.URLParameters(url)
+
     connection_params._virtual_host = conf.get("rabbitmq.vhost", "/")
     connection_params.socket_timeout = conf.get(
         "rabbitmq.socket_timeout", 5)
