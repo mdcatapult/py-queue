@@ -74,7 +74,7 @@ class Consumer(Connection):
                 excptn = kqe.__cause__
 
             headers = {
-                "x-consumer": self._local_config["name"] if self._local_config.has("name") else "Unknown",
+                "x-consumer": self._local_config.get("name", "Unknown"),
                 "x-datetime": datetime.datetime.now(),
                 "x-exception": type(excptn),
                 "x-message": str(excptn),
