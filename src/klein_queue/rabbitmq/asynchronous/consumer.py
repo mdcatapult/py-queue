@@ -76,13 +76,13 @@ class Consumer(Connection):
             headers = {
                 "x-consumer": self._local_config.get("name", "Unknown"),
                 "x-datetime": datetime.datetime.now(),
-                "x-exception": type(excptn),
+                "x-exception": str(type(excptn)),
                 "x-message": str(excptn),
                 "x-queue": self._local_config["queue"],
                 "x-stack-trace": "\n".join(format_tb(excptn.__traceback__))
             }
 
-            self._error_publisher.publish(body, pika.BasicProperties(headers=headers, content_type='application/json'))
+            self._error_publisher.publish(body.decode("utf-8"), pika.BasicProperties(headers=headers, content_type='application/json'))
             self.acknowledge_message(basic_deliver.delivery_tag)
 
         if result is not None and callable(result):
