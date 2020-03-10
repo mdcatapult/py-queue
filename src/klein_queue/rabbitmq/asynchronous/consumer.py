@@ -82,8 +82,10 @@ class Consumer(Connection):
                 "x-stack-trace": "\n".join(format_tb(excptn.__traceback__))
             }
 
-            self._error_publisher.publish(body.decode("utf-8"), pika.BasicProperties(headers=headers, content_type='application/json'))
-            self.acknowledge_message(basic_deliver.delivery_tag)
+            self._error_publisher.publish(
+                body.decode("utf-8"),
+                pika.BasicProperties(headers=headers, content_type='application/json')
+            )
 
         if result is not None and callable(result):
             result(self, channel, basic_deliver, properties)
