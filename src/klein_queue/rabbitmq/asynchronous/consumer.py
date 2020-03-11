@@ -75,7 +75,7 @@ class Consumer(Connection):
 
             headers = {
                 "x-consumer": self._local_config.get("name", "Unknown"),
-                "x-datetime": datetime.datetime.now(),
+                "x-datetime": datetime.datetime.now().isoformat(),
                 "x-exception": str(type(excptn)),
                 "x-message": str(excptn),
                 "x-queue": self._local_config["queue"],
