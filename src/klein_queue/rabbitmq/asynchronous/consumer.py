@@ -83,7 +83,7 @@ class Consumer(Connection):
             }
 
             self._error_publisher.publish(
-                body.decode("utf-8"),
+                json.loads(body),
                 pika.BasicProperties(headers=headers, content_type='application/json')
             )
 
