@@ -116,12 +116,12 @@ class Connection:
         stop ioloop and if not intentional reconnect immediately
         '''
         #LOGGER.debug('Reconnect channel: current closing state is %s', self._closing)
-        #self._connection.ioloop.stop()
-        #if not self._closing:
-        #    self._connection = self.connect()
-        #    self._connection.ioloop.start()
-        self.should_reconnect = True
-        self.stop()
+        self._connection.ioloop.stop()
+        if not self._closing:
+            self._connection = self.connect()
+            self._connection.ioloop.start()
+        #self.should_reconnect = True
+        #self.stop()
 
     def open_channel(self):
         '''
