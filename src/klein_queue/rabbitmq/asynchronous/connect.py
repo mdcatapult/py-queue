@@ -318,7 +318,7 @@ class Connection:
             self._closing = True
             LOGGER.info('Stopping')
             if self._consuming:
-                self.stop_consuming()
+                self.stop_activity()
                 self._connection.ioloop.start()
             else:
                 self._connection.ioloop.stop()
