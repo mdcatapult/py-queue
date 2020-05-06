@@ -8,7 +8,7 @@ def readme():
 
 
 setup(name='klein_queue',
-      version='0.2.10',
+      version='0.2.11',
       description='RabbitMQ integration',
       url='http://gitlab.mdcatapult.io/informatics/klein/klein_queue',
       author='Matt Cockayne',

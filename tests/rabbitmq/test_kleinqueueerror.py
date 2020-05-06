@@ -7,8 +7,8 @@ yamlString = """
 rabbitmq:
   host: [localhost]
   port: 5672
-  username: guest
-  password: guest
+  username: doclib
+  password: doclib
 
 consumer:
   queue: klein.prefetch
