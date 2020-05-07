@@ -39,10 +39,6 @@ class Connection:
         '''
         initialise connection parameters and reset internal vars
         '''
-        self.should_reconnect = False
-        self.was_consuming = False
-        self._consuming = False
-
         self._connection_params = get_url_parameters(common_config)
         self._config = config
         self._connection = None
@@ -94,8 +90,7 @@ class Connection:
         :param Exception err: The error
         """
         LOGGER.error('Connection open failed, reopening in 5 seconds: %s', err)
-        #self._connection.ioloop.call_later(5, self._connection.ioloop.stop)
-        self.reconnect()
+        self._connection.ioloop.call_later(5, self._connection.ioloop.stop)
 
     def on_connection_closed(self, connection, reason):
         # pylint: disable=unused-argument
@@ -107,21 +102,17 @@ class Connection:
         if self._closing:
             self._connection.ioloop.stop()
         else:
-            #self._connection.ioloop.call_later(5, self.reconnect)
-            LOGGER.warning('Connection closed, reconnect necessary: %s', reason)
-            self.reconnect()
+            self._connection.ioloop.call_later(5, self.reconnect)
 
     def reconnect(self):
         '''
         stop ioloop and if not intentional reconnect immediately
         '''
-        #LOGGER.debug('Reconnect channel: current closing state is %s', self._closing)
+        LOGGER.debug('Reconnect channel: current closing state is %s', self._closing)
         self._connection.ioloop.stop()
         if not self._closing:
             self._connection = self.connect()
             self._connection.ioloop.start()
-        #self.should_reconnect = True
-        #self.stop()
 
     def open_channel(self):
         '''
@@ -160,8 +151,7 @@ class Connection:
         if channel closed then log and close connection
         '''
         LOGGER.info("connection to channel %s closed because %s", channel, reason)
-        #self._connection.close()
-        self.close_connection()
+        self._connection.close()
 
     def setup_exchanges(self):
         '''
@@ -241,9 +231,6 @@ class Connection:
         start consuming using abstract method from descendent
         '''
         LOGGER.debug('Queue bound')
-        self.add_on_cancel_callback()
-        self.was_consuming = True
-        self._consuming = True
         self.start_activity()
 
     def acknowledge_message(self, delivery_tag):
@@ -258,7 +245,6 @@ class Connection:
         '''
         if cancelled then close channel
         '''
-        self._consuming = False
         LOGGER.debug('RabbitMQ acknowledged the cancellation of the activity')
         self.close_channel()
 
@@ -309,34 +295,18 @@ class Connection:
         '''
         cleanly stop and close connection
         '''
-        #LOGGER.debug('Stopping')
-        #self._closing = True
-        #self.stop_activity()
-        #self._connection.ioloop.start()
-        #LOGGER.debug('Stopped')
-        if not self._closing:
-            self._closing = True
-            LOGGER.info('Stopping')
-            if self._consuming:
-                self.stop_activity()
-                self._connection.ioloop.start()
-            else:
-                self._connection.ioloop.stop()
-            LOGGER.info('Stopped')
-
+        LOGGER.debug('Stopping')
+        self._closing = True
+        self.stop_activity()
+        self._connection.ioloop.start()
+        LOGGER.debug('Stopped')
 
     def close_connection(self):
         '''
         close connection
         '''
         LOGGER.debug('Closing connection')
-        #self._connection.close()
-        self._consuming = False
-        if self._connection.is_closing or self._connection.is_closed:
-            LOGGER.info('Connection is closing or already closed')
-        else:
-            LOGGER.info('Closing connection')
-            self._connection.close()
+        self._connection.close()
 
     @abc.abstractmethod
     def stop_activity(self):
