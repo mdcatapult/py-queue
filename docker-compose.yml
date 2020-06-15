@@ -1,0 +1,11 @@
+version: "3.6"
+services:
+  rabbit:
+    image: rabbitmq:management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: doclib
+      RABBITMQ_DEFAULT_PASS: doclib
+      RABBITMQ_DEFAULT_VHOST: "/"
