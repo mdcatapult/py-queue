@@ -59,6 +59,7 @@ class TestErrorPublisher:
 
         c = threading.Thread(target=consume)
         c.start()
+        c.join(5.0)
 
         from src.klein_queue.rabbitmq.publisher import error
         with pytest.raises(KleinQueueError) as exc_info:
