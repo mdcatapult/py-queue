@@ -35,7 +35,7 @@ sudo apt install python3.7
 ## Virtualenv
 
 ```
-python -m venv ./venv
+virtualenv -p python3.7 venv
 source venv/bin/activate
 echo -e "[global]\nindex = https://nexus.mdcatapult.io/repository/pypi-all/pypi\nindex-url = https://nexus.mdcatapult.io/repository/pypi-all/simple" > venv/pip.conf
 pip install -r requirements.txt
