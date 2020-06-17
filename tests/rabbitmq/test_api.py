@@ -59,8 +59,16 @@ class TestApi:
     def test_list_queues(self, mock_open, mock_args, mock_req):
         mock_req.side_effect = side_effect
 
+        from klein_config.config import EnvironmentAwareConfig
+        config = EnvironmentAwareConfig()
+        mock_open.assert_called_with('dummy.yml', 'r')
+
+        host = config.get('rabbitmq.host')
+        if isinstance(host, list):
+            host = host[0]
+        url = 'http://%s:15672/api/exchanges/%%2f/doclib/bindings/source' % host
+
         import src.klein_queue.rabbitmq.api as api
         queues = api.list_queues("doclib")
-        mock_req.assert_called_with('http://localhost:15672/api/exchanges/%2f/doclib/bindings/source',
-                                    auth=('doclib', 'doclib'))
+        mock_req.assert_called_with(url, auth=('doclib', 'doclib'))
         assert queues == ['archive', 'supervisor']
