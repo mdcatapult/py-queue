@@ -1,8 +1,7 @@
 import argparse
-import sys
 import threading
 
-import mock
+from unittest import mock
 import pytest
 
 yamlString = """
@@ -39,9 +38,7 @@ class TestErrorPublisher:
     def test_consumption(self, mock_open, mock_args):
         def handle_handle(cons):
             def handler_fn(msg, **kwargs):
-                cons.stop_activity()
-                sys.exit(-1)
-
+                cons.stop()
             return handler_fn
 
         from klein_config.config import EnvironmentAwareConfig
@@ -53,16 +50,11 @@ class TestErrorPublisher:
         consumer = Consumer(config.get('consumer'))
         consumer.set_handler(handle_handle(consumer))
 
-        # spin out into new thread
-        def consume():
-            consumer.run()
-
-        c = threading.Thread(target=consume)
+        c = threading.Thread(target=consumer.run)
         c.start()
 
         from src.klein_queue.rabbitmq.publisher import error
         with pytest.raises(KleinQueueError) as exc_info:
             error('oh dear')
-            assert True is True
 
         assert exc_info.typename == "KleinQueueError"

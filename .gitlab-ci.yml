@@ -8,8 +8,9 @@ variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   RABBITMQ_HOST: rabbitmq
   RABBITMQ_PORT: 5672
-  RABBITMQ_DEFAULT_USER: guest
-  RABBITMQ_DEFAULT_PASS: guest
+  RABBITMQ_DEFAULT_USER: doclib
+  RABBITMQ_DEFAULT_PASS: doclib
+  RABBITMQ_DEFAULT_VHOST: "/"
 
 
 cache:
@@ -29,16 +30,23 @@ before_script:
 
 lint:
   stage: test
+  tags:
+    - wopr
   script:
     - pylint --rcfile=.pylintrc src
 
-# test:
-#   stage: test
-#   script:
-#     - python -m pytest
+test:
+  stage: test
+  tags:
+    - wopr
+  script:
+    - pytest --cov-report term:skip-covered --cov=src tests/
+  coverage: '/TOTAL.*\s+(\d+%)$/'
 
 publish-stable:
   stage: publish
+  tags:
+    - wopr
   script:
     - python setup.py sdist bdist_wheel
     - twine upload -u $NEXUS_USERNAME -p $NEXUS_PASSWORD --repository-url https://nexus.mdcatapult.io/repository/pypi-stable/ dist/*
@@ -47,6 +55,8 @@ publish-stable:
 
 publish-unstable:
   stage: publish
+  tags:
+    - wopr
   script:
     - python setup.py egg_info -b.build-$CI_JOB_ID sdist bdist_wheel
     - twine upload -u $NEXUS_USERNAME -p $NEXUS_PASSWORD --repository-url https://nexus.mdcatapult.io/repository/pypi-unstable/ dist/*

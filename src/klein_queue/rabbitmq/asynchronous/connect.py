@@ -8,6 +8,7 @@ import json
 import logging
 
 import pika
+import pika.exceptions
 
 from klein_config import config as common_config
 from ..util import get_url_parameters
@@ -146,12 +147,14 @@ class Connection:
         self._channel.add_on_close_callback(self.on_channel_closed)
 
     def on_channel_closed(self, channel, reason):
-        # pylint: disable=unused-argument
         '''
         if channel closed then log and close connection
         '''
         LOGGER.info("connection to channel %s closed because %s", channel, reason)
-        self._connection.close()
+        try:
+            self._connection.close()
+        except pika.exceptions.ConnectionWrongStateError:
+            LOGGER.warning("connection to channel %s is already closed or is closing", channel)
 
     def setup_exchanges(self):
         '''
