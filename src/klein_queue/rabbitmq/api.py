@@ -3,18 +3,18 @@ import time
 import requests
 from klein_config import config
 
-# TODO: Implement more robust distribiuted caching mechanism
+# TODO: Implement more robust distributed caching mechanism
 
 ttl = config.get('rabbitmq.api.list_queues.cache', 0)
 cache = {}
 
 
 def list_queues(exchange, flush=False):
-    '''
-    utility to retrive queues attached to exchange
-    configured user for connection shoudl have
+    """
+    utility to retrieve queues attached to exchange
+    configured user for connection should have
     management permissions
-    '''
+    """
 
     if flush:
         del cache[exchange]
@@ -27,9 +27,14 @@ def list_queues(exchange, flush=False):
     if exchange in cache and "queues" in cache[exchange]:
         return cache[exchange]["queues"]
 
+    host = config.get("rabbitmq.host")
+    if isinstance(host, list):
+        host = host[0]
+
+    # TODO: Implement other vhosts than default.
     endpoint = "/api/exchanges/%%2f/%s/bindings/source" % exchange
     url = 'http://%s:%s%s' % (
-        config.get("rabbitmq.host"),
+        host,
         config.get("rabbitmq.management_port"),
         endpoint
     )

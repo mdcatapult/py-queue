@@ -1,8 +1,6 @@
 import argparse
-import sys
 import threading
-
-import mock
+from unittest import mock
 
 yamlString = """
 rabbitmq:
@@ -20,7 +18,7 @@ consumer:
 
 publisher:
   queue: publish
-  
+
 error:
   queue: error
 """
@@ -39,8 +37,7 @@ class TestConsumer:
         def handle_handle(cons):
             def handler_fn(msg, **kwargs):
                 assert msg == {'msg': 'test_message'}
-                cons.stop_activity()
-                sys.exit(-1)
+                cons.stop()
 
             return handler_fn
 
@@ -52,11 +49,7 @@ class TestConsumer:
         consumer = Consumer(config.get('consumer'))
         consumer.set_handler(handle_handle(consumer))
 
-        # spin out into new thread
-        def consume():
-            consumer.run()
-
-        c = threading.Thread(target=consume)
+        c = threading.Thread(target=consumer.run)
         c.start()
 
         from src.klein_queue.rabbitmq.synchronous.publisher import Publisher
