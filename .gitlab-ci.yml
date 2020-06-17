@@ -40,7 +40,8 @@ test:
   tags:
     - wopr
   script:
-    - python -m pytest
+    - pytest --cov-report term:skip-covered --cov=src tests/
+  coverage: '/TOTAL.*\s+(\d+%)$/'
 
 publish-stable:
   stage: publish
