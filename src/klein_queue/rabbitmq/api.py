@@ -27,10 +27,14 @@ def list_queues(exchange, flush=False):
     if exchange in cache and "queues" in cache[exchange]:
         return cache[exchange]["queues"]
 
+    host = config.get("rabbitmq.host")
+    if isinstance(host, list):
+        host = host[0]
+
     # TODO: Implement other vhosts than default.
     endpoint = "/api/exchanges/%%2f/%s/bindings/source" % exchange
     url = 'http://%s:%s%s' % (
-        config.get("rabbitmq.host")[0],
+        host,
         config.get("rabbitmq.management_port"),
         endpoint
     )
