@@ -1,7 +1,6 @@
 import argparse
 import threading
-
-import mock
+from unittest import mock
 
 yamlString = """
 rabbitmq:
