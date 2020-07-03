@@ -7,8 +7,13 @@ def readme():
         return f.read()
 
 
+__version__ = ''
+exec(open("./src/version.py").read())
+if __version__ == '':
+    raise RuntimeError("unable to find application version")
+
 setup(name='klein_queue',
-      version='0.2.14',
+      version=__version__,
       description='RabbitMQ integration',
       url='http://gitlab.mdcatapult.io/informatics/klein/klein_queue',
       author='Matt Cockayne',
