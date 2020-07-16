@@ -6,9 +6,9 @@ class KleinQueueError(Exception):
     '''
     Queue Error Class
     '''
-    def __init__(self, body=None):
+    def __init__(self, *args, body=None):
         self.body = body
-        super().__init__(self)
+        super().__init__(self, *args)
 
 
 def get_url_parameters(conf):
