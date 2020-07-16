@@ -4,8 +4,10 @@ import pika
 
 class KleinQueueError(Exception):
     '''
-    Doclib Error Class
+    Queue Error Class
     '''
+    def __init__(self, body=None):
+        self.body = body
 
 
 def get_url_parameters(conf):

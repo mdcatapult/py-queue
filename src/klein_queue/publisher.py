@@ -8,9 +8,6 @@ import json
 from klein_config import config
 from .rabbitmq.publisher import publish as QueuePublish
 from .rabbitmq.publisher import requeue as QueueRequeue
-from .rabbitmq.publisher import error as QueueError
-from .rabbitmq.publisher import supervise as QueueSupervisor
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -22,9 +19,11 @@ def publish(data):
     QueuePublish(data)
 
 
-def requeue(data, **kwargs):
+def requeue(data, on_limit_reached=None, **kwargs):
     '''
     publish data back on to queue being consumed
+
+    :keyword on_limit_reached -- Callback to execute if requeue limit is reached.
     '''
     if "klein.requeued" in data:
         data["klein.requeued"] = data["klein.requeued"] + 1
@@ -39,22 +38,7 @@ def requeue(data, **kwargs):
         data["path"] = os.getcwd()
         data["message"] = f"Max Requeue limit ({limit}) hit"
         LOGGER.error('Requeue Error: %s', json.dumps(data))
-        QueueError(data)
+        if on_limit_reached:
+            on_limit_reached(data)
     else:
         QueueRequeue(data)
-
-
-def error(data):
-    '''
-    publish data to error queue
-    '''
-    LOGGER.debug(json.dumps(data))
-    QueueError(data)
-
-
-def supervise(data):
-    '''
-    publish data to supervisor queue
-    '''
-    LOGGER.debug(json.dumps(data))
-    QueueSupervisor(data)

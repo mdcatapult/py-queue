@@ -13,8 +13,6 @@ from .synchronous.publisher import Publisher
 LOGGER = logging.getLogger(__name__)
 DOWNSTREAM = None
 UPSTREAM = None
-ERROR = None
-SUPERVISOR = None
 
 
 def c(q):
@@ -41,18 +39,6 @@ if config.has("consumer"):
     while not connected:
         connected = c(UPSTREAM)
 
-if config.has("error"):
-    ERROR = Publisher(config.get('error'))
-    connected = False
-    while not connected:
-        connected = c(ERROR)
-
-if config.has("supervisor"):
-    SUPERVISOR = Publisher(config.get('supervisor'))
-    connected = False
-    while not connected:
-        connected = c(SUPERVISOR)
-
 
 def publish(message):
     '''
@@ -64,13 +50,6 @@ def publish(message):
     DOWNSTREAM.publish(message)
 
 
-def supervise(message):
-    if not SUPERVISOR:
-        raise EnvironmentError(
-            "No supervisor has been configured for publishing")
-    SUPERVISOR.publish(message)
-
-
 def requeue(message):
     '''
     publish message to same queue being consumed
@@ -79,12 +58,3 @@ def requeue(message):
         raise EnvironmentError(
             "No upstream has been configured for publishing")
     UPSTREAM.publish(message)
-
-
-def error(message):
-    '''
-    publish message to error queue
-    '''
-    if not ERROR:
-        raise EnvironmentError("No error has been configured for publishing")
-    raise KleinQueueError(message)

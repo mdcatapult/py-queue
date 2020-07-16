@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import datetime
-from traceback import format_tb
 
-import pika
+
+
 
 from klein_config import config as common_config
 from .connect import Connection
@@ -23,11 +22,6 @@ class Consumer(Connection):
         self._local_config = config
         self._handler_fn = handler_fn
         self._consumer_tag = None
-        if config.get('error') is None:
-            self._error_publisher = Publisher(common_config.get('error'))
-        else:
-            self._error_publisher = Publisher(config.get('error'))
-        self._error_publisher.connect()
 
         super().__init__(config)
 
@@ -67,25 +61,9 @@ class Consumer(Connection):
                 body), basic_deliver=basic_deliver, properties=properties)
         except (json.decoder.JSONDecodeError, json.JSONDecodeError) as err:
             LOGGER.error("unable to process message %s : %s", body, str(err))
-
         except KleinQueueError as kqe:
-            excptn = kqe
-            if kqe.__cause__ is not None and isinstance(kqe.__cause__, Exception):
-                excptn = kqe.__cause__
-
-            headers = {
-                "x-consumer": self._local_config.get("name", "Unknown"),
-                "x-datetime": datetime.datetime.now().isoformat(),
-                "x-exception": str(type(excptn)),
-                "x-message": str(excptn),
-                "x-queue": self._local_config["queue"],
-                "x-stack-trace": "\n".join(format_tb(excptn.__traceback__))
-            }
-
-            self._error_publisher.publish(
-                json.loads(body),
-                pika.BasicProperties(headers=headers, content_type='application/json')
-            )
+            kqe.body = json.dumps(body)
+            raise kqe
 
         if result is not None and callable(result):
             result(self, channel, basic_deliver, properties)
