@@ -8,6 +8,7 @@ class KleinQueueError(Exception):
     '''
     def __init__(self, body=None):
         self.body = body
+        super().__init__(self)
 
 
 def get_url_parameters(conf):

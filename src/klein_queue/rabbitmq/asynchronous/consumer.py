@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-
-
-
-
 from klein_config import config as common_config
 from .connect import Connection
-from ..synchronous.publisher import Publisher
 from ..util import KleinQueueError
 
 LOGGER = logging.getLogger(__name__)
