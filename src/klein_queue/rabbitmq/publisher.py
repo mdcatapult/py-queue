@@ -3,11 +3,8 @@
 klein_queue.rabbitmq.publisher
 '''
 import logging
-
 import pika.exceptions
-
 from klein_config import config
-from .util import KleinQueueError
 from .synchronous.publisher import Publisher
 
 LOGGER = logging.getLogger(__name__)

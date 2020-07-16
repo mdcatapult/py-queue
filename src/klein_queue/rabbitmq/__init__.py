@@ -9,4 +9,3 @@ from .consumer import nackError
 from .api import list_queues
 from .publisher import publish
 from .publisher import requeue
-from .publisher import error
