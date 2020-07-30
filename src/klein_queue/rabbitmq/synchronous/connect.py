@@ -23,10 +23,7 @@ class Connection:
         initialise connection parameters and reset internal vars
         '''
         self._connection_params = get_url_parameters(config)
-<<<<<<< HEAD
         self._queue = config.get(key)
-=======
->>>>>>> 0fe1c17bbb77ad97d72d7616eaadafbf82e2e89b
         self._config = config
         self._connection = None
         self._channel = None
@@ -94,11 +91,7 @@ class Connection:
                     ex_type = ex["type"]
                 self._channel.exchange_declare(ex_name, ex_type)
         if self._config.get("rabbitmq.create_queue_on_connect", True) and not (
-<<<<<<< HEAD
                 "create_on_connect" in self._queue and not self._queue["create_on_connect"]):
-=======
-                "create_on_connect" in self._config and not self._config["create_on_connect"]):
->>>>>>> 0fe1c17bbb77ad97d72d7616eaadafbf82e2e89b
             self.setup_queue()
 
     def setup_queue(self):
@@ -106,17 +99,10 @@ class Connection:
         declare queue with rabbitmq, ensuring durability
         '''
         create_queue = self._config.get("rabbitmq.create_queue_on_connect", True) and not (
-<<<<<<< HEAD
                 "create_on_connect" in self._queue and not self._queue["create_on_connect"])
         if create_queue and "queue" in self._queue and self._queue["queue"] is not False:
             LOGGER.debug('Declaring queue %s', self._queue["queue"])
             self._channel.queue_declare(queue=self._queue["queue"],
-=======
-                "create_on_connect" in self._config and not self._config["create_on_connect"])
-        if create_queue and "queue" in self._config and self._config["queue"] is not False:
-            LOGGER.debug('Declaring queue %s', self._config["queue"])
-            self._channel.queue_declare(queue=self._config["queue"],
->>>>>>> 0fe1c17bbb77ad97d72d7616eaadafbf82e2e89b
                                         durable=True,
                                         exclusive=False,
                                         auto_delete=False,
