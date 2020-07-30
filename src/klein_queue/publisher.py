@@ -22,7 +22,7 @@ def rabbit_requeue(config, key, data, on_limit_reached=None, **kwargs):
     publishes data to queue defined on config key.
     executes callback on data if requeue limit is both found and exceeded.
 
-    :keyword on_limit_reached -- Callback to execute if requeue limit is reached.
+    :keyword on_limit_reached -- Callback to execute on data if requeue limit is reached.
     '''
     if "klein.requeued" in data:
         data["klein.requeued"] = data["klein.requeued"] + 1
