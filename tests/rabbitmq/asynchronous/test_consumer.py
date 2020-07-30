@@ -23,7 +23,7 @@ class TestConsumer:
                 "host": ["localhost"],
                 "port": 5672,
                 "username": "doclib",
-                "password": "doclib"
+                "password": "doclib",
             },
             "consumer": {
                 "queue": "klein.prefetch",

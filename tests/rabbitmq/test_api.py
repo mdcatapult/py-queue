@@ -39,7 +39,8 @@ class TestApi:
                 "host": ["localhost"],
                 "port": 5672,
                 "username": "doclib",
-                "password": "doclib"
+                "password": "doclib",
+                "management_port": 15672
             },
             "consumer": {
                 "queue": "klein.prefetch",

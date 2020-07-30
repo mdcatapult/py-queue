@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 
 class Publisher(Connection):
 
-    def __init__(self, config):
+    def __init__(self, config, key):
         self._publish_interval = config["publishInterval"] if "publishInterval" in config else 1
         self._messages = deque([])
         self._deliveries = []
@@ -21,7 +21,7 @@ class Publisher(Connection):
         self._nacked = 0
         self._message_number = 0
         self._stopping = False
-        super().__init__(config)
+        super().__init__(config, key)
 
     def start_activity(self):
         LOGGER.debug('Issuing consumer related RPC commands')
