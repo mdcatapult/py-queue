@@ -4,7 +4,6 @@ klein_queue_rabbitmq.consumer
 '''
 import time
 
-from klein_config import config
 from .asynchronous.consumer import Consumer
 
 
@@ -47,11 +46,11 @@ def nackError(err):
     return handle
 
 
-def consume(callback):
+def consume(config, key, callback):
     '''
     use auto detected config from klein_config to instantiate consumer
     '''
-    c = Consumer(config.get("consumer"), callback)
+    c = Consumer(config, key, callback)
     try:
         c.run()
     except KeyboardInterrupt:

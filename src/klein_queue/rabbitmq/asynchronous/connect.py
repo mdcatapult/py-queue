@@ -10,7 +10,6 @@ import logging
 import pika
 import pika.exceptions
 
-from klein_config import config as common_config
 from ..util import get_url_parameters
 
 LOGGER = logging.getLogger(__name__)
@@ -36,12 +35,13 @@ class Connection:
     Base connection class for publisher and consumer to inherit from
     '''
 
-    def __init__(self, config):
+    def __init__(self, config, key):
         '''
         initialise connection parameters and reset internal vars
         '''
-        self._connection_params = get_url_parameters(common_config)
+        self._connection_params = get_url_parameters(config)
         self._config = config
+        self._queue = config.get(key)
         self._connection = None
         self._channel = None
         self._closing = False
@@ -132,8 +132,8 @@ class Connection:
         self._channel = channel
 
         prefetch = 1
-        if "prefetch" in self._config:
-            prefetch = self._config["prefetch"]
+        if "prefetch" in self._queue:
+            prefetch = self._queue["prefetch"]
         self._channel.basic_qos(prefetch_count=prefetch)
 
         self.add_on_channel_close_callback()
@@ -162,9 +162,9 @@ class Connection:
         and bind callback for successful declaration
         if no exchanges configured then setup queues
         '''
-        if "exchanges" in self._config:
-            LOGGER.debug('Declaring exchanges %s', self._config["exchanges"])
-            for ex in self._config['exchanges']:
+        if "exchanges" in self._queue:
+            LOGGER.debug('Declaring exchanges %s', self._queue["exchanges"])
+            for ex in self._queue['exchanges']:
                 ex_name = ex
                 ex_type = 'fanout'
                 if isinstance(ex, dict):
@@ -194,11 +194,11 @@ class Connection:
         declare queue with rabbitmq, ensuring durability
         '''
 
-        create_queue = common_config.get("rabbitmq.create_queue_on_connect", True) and not (
-                "create_on_connect" in self._config and not self._config["create_on_connect"])
+        create_queue = self._config.get("rabbitmq.create_queue_on_connect", True) and not (
+                "create_on_connect" in self._queue and not self._queue["create_on_connect"])
         if create_queue:
-            LOGGER.debug('Declaring queue %s', self._config["queue"])
-            self._channel.queue_declare(queue=self._config["queue"],
+            LOGGER.debug('Declaring queue %s', self._queue["queue"])
+            self._channel.queue_declare(queue=self._queue["queue"],
                                         callback=self.on_queue_declareok,
                                         durable=True,
                                         exclusive=False,
@@ -212,9 +212,9 @@ class Connection:
         '''
         if exchanges configured then bind queue to exchange
         '''
-        if "exchanges" in self._config:
-            for ex in self._config['exchanges']:
-                LOGGER.debug('Binding %s to %s', ex, self._config["queue"])
+        if "exchanges" in self._queue:
+            for ex in self._queue['exchanges']:
+                LOGGER.debug('Binding %s to %s', ex, self._queue["queue"])
                 ex_name = ex
                 if isinstance(ex, dict):
                     if "name" not in ex:
@@ -224,7 +224,7 @@ class Connection:
                     ex_name = ex["name"]
 
                 self._channel.queue_bind(
-                    self._config["queue"], ex_name, callback=self.on_bindok)
+                    self._queue["queue"], ex_name, callback=self.on_bindok)
         else:
             self.start_activity()
 

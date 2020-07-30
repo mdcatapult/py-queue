@@ -5,23 +5,22 @@ klein_queue.publisher
 import os
 import logging
 import json
-from klein_config import config
-from .rabbitmq.publisher import publish as QueuePublish
-from .rabbitmq.publisher import requeue as QueueRequeue
+from .rabbitmq.publisher import publish
 
 LOGGER = logging.getLogger(__name__)
 
 
-def publish(data):
+def rabbit_publish(config, key, data):
     '''
-    Publish data to configured queue
+    Publish data to queue defined on config key
     '''
-    QueuePublish(data)
+    publish(config, key, data)
 
 
-def requeue(data, on_limit_reached=None, **kwargs):
+def rabbit_requeue(config, key, data, on_limit_reached=None, **kwargs):
     '''
-    publish data back on to queue being consumed
+    publishes data to queue defined on config key.
+    executes callback on data if requeue limit is both found and exceeded.
 
     :keyword on_limit_reached -- Callback to execute if requeue limit is reached.
     '''
@@ -41,4 +40,4 @@ def requeue(data, on_limit_reached=None, **kwargs):
         if on_limit_reached:
             on_limit_reached(data)
     else:
-        QueueRequeue(data)
+        publish(config, key, data)

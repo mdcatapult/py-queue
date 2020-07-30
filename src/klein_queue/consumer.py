@@ -2,11 +2,11 @@
 '''
 klein_queue.consumer
 '''
-from .rabbitmq.consumer import consume as QueueConsume
+from .rabbitmq.consumer import consume
 
 
-def consume(callback):
+def rabbit_consume(config, key, callback):
     '''
-    Consumer configured queue with callback
+    Consume from rabbit queue with callback
     '''
-    QueueConsume(callback)
+    consume(config, key, callback)

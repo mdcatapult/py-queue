@@ -1,6 +1,6 @@
 '''
 klein_queue
 '''
-from .consumer import consume
-from .publisher import publish
-from .publisher import requeue
+from .consumer import rabbit_consume
+from .publisher import rabbit_publish
+from .publisher import rabbit_requeue
