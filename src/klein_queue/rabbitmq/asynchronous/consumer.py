@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-from klein_config import config as common_config
 from .connect import Connection
 from ..util import KleinQueueError
 
@@ -14,7 +13,7 @@ class Consumer(Connection):
     '''
 
     def __init__(self, config, handler_fn=None):
-        self._local_config = config
+        self._config = config
         self._handler_fn = handler_fn
         self._consumer_tag = None
 
@@ -27,7 +26,7 @@ class Consumer(Connection):
         LOGGER.debug('Issuing consumer related RPC commands')
         self.add_on_cancel_callback()
         self._consumer_tag = self._channel.basic_consume(
-            on_message_callback=self.on_message, queue=common_config.get("consumer.queue"))
+            on_message_callback=self.on_message, queue=self._config.get("consumer.queue"))
 
     def on_message(self, channel, basic_deliver, properties, body):
         '''
@@ -43,7 +42,7 @@ class Consumer(Connection):
         LOGGER.debug('Received message # %s from %s: %s',
                      basic_deliver.delivery_tag, properties.app_id, body)
 
-        auto_ack = common_config.get("consumer.auto_acknowledge", True)
+        auto_ack = self._config.get("consumer.auto_acknowledge", True)
 
         if auto_ack:
             LOGGER.info("Auto-acknowledge message # %s", basic_deliver.delivery_tag)

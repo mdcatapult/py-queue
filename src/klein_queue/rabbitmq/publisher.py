@@ -4,15 +4,12 @@ klein_queue.rabbitmq.publisher
 '''
 import logging
 import pika.exceptions
-from klein_config import config
 from .synchronous.publisher import Publisher
 
 LOGGER = logging.getLogger(__name__)
-DOWNSTREAM = None
-UPSTREAM = None
 
 
-def c(q):
+def connect(q):
     success = False
     try:
         LOGGER.debug("QUEUE: Attempting Connection to %s", q._url if hasattr(q, "_url") else "unknown")
@@ -24,34 +21,16 @@ def c(q):
     return success
 
 
-if config.has("publisher"):
-    DOWNSTREAM = Publisher(config.get("publisher"))
+def publish(queue_config, message):
+    '''
+    synchronously publishes a message to a queue with the given configuration
+
+    NOTE: This is a convenience function which creates a new connection on every call.
+    Use an instance of the Publisher for a persistent connection to reduce overhead.
+    '''
+    publisher = Publisher(queue_config)
     connected = False
     while not connected:
-        connected = c(DOWNSTREAM)
+        connected = connect(publisher)
+    publisher.publish(message)
 
-if config.has("consumer"):
-    UPSTREAM = Publisher(config.get("consumer"))
-    connected = False
-    while not connected:
-        connected = c(UPSTREAM)
-
-
-def publish(message):
-    '''
-    publish message to downstream queue
-    '''
-    if not DOWNSTREAM:
-        raise EnvironmentError(
-            "No downstream has been configured for publishing")
-    DOWNSTREAM.publish(message)
-
-
-def requeue(message):
-    '''
-    publish message to same queue being consumed
-    '''
-    if not UPSTREAM:
-        raise EnvironmentError(
-            "No upstream has been configured for publishing")
-    UPSTREAM.publish(message)

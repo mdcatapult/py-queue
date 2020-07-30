@@ -5,25 +5,27 @@ klein_queue.publisher
 import os
 import logging
 import json
-from klein_config import config
-from .rabbitmq.publisher import publish as QueuePublish
-from .rabbitmq.publisher import requeue as QueueRequeue
+from .rabbitmq.publisher import publish
 
 LOGGER = logging.getLogger(__name__)
 
 
-def publish(data):
+def publish_downstream(config, data):
     '''
-    Publish data to configured queue
+    synchronously publishes data to "publisher"
+
+    NOTE: This is a convenience function which creates a new connection on every call.
+    Use an instance of the Publisher for a persistent connection to reduce overhead.
     '''
-    QueuePublish(data)
+    publish(config.get("publisher"), data)
 
 
-def requeue(data, on_limit_reached=None, **kwargs):
+def requeue(config, data, on_limit_reached=None, **kwargs):
     '''
-    publish data back on to queue being consumed
+    synchronously publishes data back to "consumer" and executes a callback if a requeue limit can
+    be found is exceeded.
 
-    :keyword on_limit_reached -- Callback to execute if requeue limit is reached.
+    :keyword on_limit_reached -- Callback to execute on data if requeue limit is reached.
     '''
     if "klein.requeued" in data:
         data["klein.requeued"] = data["klein.requeued"] + 1
@@ -41,4 +43,4 @@ def requeue(data, on_limit_reached=None, **kwargs):
         if on_limit_reached:
             on_limit_reached(data)
     else:
-        QueueRequeue(data)
+        publish(config.get("consumer"), data)

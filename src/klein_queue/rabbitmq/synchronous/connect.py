@@ -8,7 +8,6 @@ import logging
 
 import pika
 
-from klein_config import config as common_config
 from ..util import get_url_parameters
 
 LOGGER = logging.getLogger(__name__)
@@ -23,7 +22,7 @@ class Connection:
         '''
         initialise connection parameters and reset internal vars
         '''
-        self._connection_params = get_url_parameters(common_config)
+        self._connection_params = get_url_parameters(config)
         self._config = config
         self._connection = None
         self._channel = None
@@ -90,7 +89,7 @@ class Connection:
                     ex_name = ex["name"]
                     ex_type = ex["type"]
                 self._channel.exchange_declare(ex_name, ex_type)
-        if common_config.get("rabbitmq.create_queue_on_connect", True) and not (
+        if self._config.get("rabbitmq.create_queue_on_connect", True) and not (
                 "create_on_connect" in self._config and not self._config["create_on_connect"]):
             self.setup_queue()
 
@@ -98,7 +97,7 @@ class Connection:
         '''
         declare queue with rabbitmq, ensuring durability
         '''
-        create_queue = common_config.get("rabbitmq.create_queue_on_connect", True) and not (
+        create_queue = self._config.get("rabbitmq.create_queue_on_connect", True) and not (
                 "create_on_connect" in self._config and not self._config["create_on_connect"])
         if create_queue and "queue" in self._config and self._config["queue"] is not False:
             LOGGER.debug('Declaring queue %s', self._config["queue"])
