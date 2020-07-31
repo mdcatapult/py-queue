@@ -301,7 +301,7 @@ class Connection:
         LOGGER.debug('Stopping')
         self._closing = True
         self.stop_activity()
-        self._connection.ioloop.start()
+        self._connection.ioloop.stop()
         LOGGER.debug('Stopped')
 
     def close_connection(self):

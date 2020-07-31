@@ -1,7 +1,7 @@
 import argparse
 import threading
 from unittest import mock
-
+import time
 
 class CustomThrowable(Exception):
     pass
@@ -47,3 +47,7 @@ class TestConsumer:
         publisher = Publisher(config, "publisher")
         publisher.connect()
         publisher.publish_message({'msg': 'test_message'})
+
+        time.sleep(0.5)
+        consumer.stop()
+
