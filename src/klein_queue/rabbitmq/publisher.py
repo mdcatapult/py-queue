@@ -17,13 +17,15 @@ def connect(q):
         success = True
     except pika.exceptions.ConnectionClosed:
         LOGGER.debug("QUEUE: Connection Failed for %s", q._url if hasattr(q, "_url") else "unknown")
-        success = False
     return success
 
 
 def publish(config, key, message):
     '''
-    publish message to queue
+    Publish message to queue with given key in the config.
+
+    NOTE: This is a convenience function. Each call will create a new connection to rabbit.
+    Use the Publisher class for a persistent connection.
     '''
     if config.has(key):
         queue = Publisher(config, key)
