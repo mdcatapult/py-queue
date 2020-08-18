@@ -1,27 +1,4 @@
-import argparse
 from unittest import mock
-
-yamlString = """
-rabbitmq:
-  host: [localhost]
-  port: 5672
-  management_port: 15672
-  username: doclib
-  password: doclib
-
-consumer:
-  queue: klein.prefetch
-  auto_acknowledge: true
-  prefetch: 1
-  create_on_connect: true
-  error: error
-
-publisher:
-  queue: publish
-
-error:
-  queue: error
-"""
 
 
 class MockResponse:
@@ -53,22 +30,36 @@ def side_effect(*args, **kwargs):
 
 class TestApi:
     @mock.patch('src.klein_queue.rabbitmq.api.requests.get')
-    @mock.patch('argparse.ArgumentParser.parse_known_args',
-                return_value=(argparse.Namespace(config="dummy.yml", common=None), argparse.Namespace()))
-    @mock.patch('builtins.open', new_callable=mock.mock_open, read_data=yamlString)
-    def test_list_queues(self, mock_open, mock_args, mock_req):
+    def test_list_queues(self, mock_req):
         mock_req.side_effect = side_effect
 
         from klein_config.config import EnvironmentAwareConfig
-        config = EnvironmentAwareConfig()
-        mock_open.assert_called_with('dummy.yml', 'r')
+        config = EnvironmentAwareConfig({
+            "rabbitmq": {
+                "host": ["localhost"],
+                "port": 5672,
+                "username": "doclib",
+                "password": "doclib",
+                "management_port": 15672
+            },
+            "consumer": {
+                "queue": "klein.prefetch",
+                "auto_acknowledge": True,
+                "prefetch": 1,
+                "create_on_connect": True,
+            },
+            "publisher": {
+                "queue": "publish"
+            }
+        })
 
         host = config.get('rabbitmq.host')
         if isinstance(host, list):
             host = host[0]
         url = 'http://%s:15672/api/exchanges/%%2f/doclib/bindings/source' % host
 
-        import src.klein_queue.rabbitmq.api as api
-        queues = api.list_queues("doclib")
+        from src.klein_queue.rabbitmq.api import ApiClient
+        client = ApiClient(config)
+        queues = client.list_queues("doclib")
         mock_req.assert_called_with(url, auth=('doclib', 'doclib'))
         assert queues == ['archive', 'supervisor']

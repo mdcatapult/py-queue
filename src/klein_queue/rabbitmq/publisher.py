@@ -3,21 +3,13 @@
 klein_queue.rabbitmq.publisher
 '''
 import logging
-
 import pika.exceptions
-
-from klein_config import config
-from .util import KleinQueueError
 from .synchronous.publisher import Publisher
 
 LOGGER = logging.getLogger(__name__)
-DOWNSTREAM = None
-UPSTREAM = None
-ERROR = None
-SUPERVISOR = None
 
 
-def c(q):
+def connect(q):
     success = False
     try:
         LOGGER.debug("QUEUE: Attempting Connection to %s", q._url if hasattr(q, "_url") else "unknown")
@@ -25,66 +17,24 @@ def c(q):
         success = True
     except pika.exceptions.ConnectionClosed:
         LOGGER.debug("QUEUE: Connection Failed for %s", q._url if hasattr(q, "_url") else "unknown")
-        success = False
     return success
 
 
-if config.has("publisher"):
-    DOWNSTREAM = Publisher(config.get("publisher"))
-    connected = False
-    while not connected:
-        connected = c(DOWNSTREAM)
-
-if config.has("consumer"):
-    UPSTREAM = Publisher(config.get("consumer"))
-    connected = False
-    while not connected:
-        connected = c(UPSTREAM)
-
-if config.has("error"):
-    ERROR = Publisher(config.get('error'))
-    connected = False
-    while not connected:
-        connected = c(ERROR)
-
-if config.has("supervisor"):
-    SUPERVISOR = Publisher(config.get('supervisor'))
-    connected = False
-    while not connected:
-        connected = c(SUPERVISOR)
-
-
-def publish(message):
+def publish(config, key, message):
     '''
-    publish message to downstream queue
+    Publish message to queue with given key in the config.
+
+    NOTE: This is a convenience function. Each call will create a new connection to rabbit.
+    Use the Publisher class for a persistent connection.
     '''
-    if not DOWNSTREAM:
+    if config.has(key):
+        queue = Publisher(config, key)
+    else:
         raise EnvironmentError(
             "No downstream has been configured for publishing")
-    DOWNSTREAM.publish(message)
 
+    connected = False
+    while not connected:
+        connected = connect(queue)
 
-def supervise(message):
-    if not SUPERVISOR:
-        raise EnvironmentError(
-            "No supervisor has been configured for publishing")
-    SUPERVISOR.publish(message)
-
-
-def requeue(message):
-    '''
-    publish message to same queue being consumed
-    '''
-    if not UPSTREAM:
-        raise EnvironmentError(
-            "No upstream has been configured for publishing")
-    UPSTREAM.publish(message)
-
-
-def error(message):
-    '''
-    publish message to error queue
-    '''
-    if not ERROR:
-        raise EnvironmentError("No error has been configured for publishing")
-    raise KleinQueueError(message)
+    queue.publish(message)

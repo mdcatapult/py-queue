@@ -8,7 +8,6 @@ import logging
 
 import pika
 
-from klein_config import config as common_config
 from ..util import get_url_parameters
 
 LOGGER = logging.getLogger(__name__)
@@ -19,11 +18,12 @@ class Connection:
     Base connection for consumers and publisher to inherit
     '''
 
-    def __init__(self, config):
+    def __init__(self, config, key):
         '''
         initialise connection parameters and reset internal vars
         '''
-        self._connection_params = get_url_parameters(common_config)
+        self._connection_params = get_url_parameters(config)
+        self._queue = config.get(key)
         self._config = config
         self._connection = None
         self._channel = None
@@ -68,8 +68,8 @@ class Connection:
         self._channel = self._connection.channel()
 
         prefetch = 1
-        if "prefetch" in self._config:
-            prefetch = self._config["prefetch"]
+        if "prefetch" in self._queue:
+            prefetch = self._queue["prefetch"]
         self._channel.basic_qos(prefetch_count=prefetch)
 
     def setup_exchanges(self):
@@ -77,9 +77,9 @@ class Connection:
         if exchanges configured then auto declare as fanout exchanges
         then setup queues
         '''
-        if "exchanges" in self._config:
-            LOGGER.debug('Declaring exchanges %s', self._config["exchanges"])
-            for ex in self._config['exchanges']:
+        if "exchanges" in self._queue:
+            LOGGER.debug('Declaring exchanges %s', self._queue["exchanges"])
+            for ex in self._queue['exchanges']:
                 ex_name = ex
                 ex_type = 'fanout'
                 if isinstance(ex, dict):
@@ -90,19 +90,19 @@ class Connection:
                     ex_name = ex["name"]
                     ex_type = ex["type"]
                 self._channel.exchange_declare(ex_name, ex_type)
-        if common_config.get("rabbitmq.create_queue_on_connect", True) and not (
-                "create_on_connect" in self._config and not self._config["create_on_connect"]):
+        if self._config.get("rabbitmq.create_queue_on_connect", True) and not (
+                "create_on_connect" in self._queue and not self._queue["create_on_connect"]):
             self.setup_queue()
 
     def setup_queue(self):
         '''
         declare queue with rabbitmq, ensuring durability
         '''
-        create_queue = common_config.get("rabbitmq.create_queue_on_connect", True) and not (
-                "create_on_connect" in self._config and not self._config["create_on_connect"])
-        if create_queue and "queue" in self._config and self._config["queue"] is not False:
-            LOGGER.debug('Declaring queue %s', self._config["queue"])
-            self._channel.queue_declare(queue=self._config["queue"],
+        create_queue = self._config.get("rabbitmq.create_queue_on_connect", True) and not (
+                "create_on_connect" in self._queue and not self._queue["create_on_connect"])
+        if create_queue and "queue" in self._queue and self._queue["queue"] is not False:
+            LOGGER.debug('Declaring queue %s', self._queue["queue"])
+            self._channel.queue_declare(queue=self._queue["queue"],
                                         durable=True,
                                         exclusive=False,
                                         auto_delete=False,
@@ -115,9 +115,9 @@ class Connection:
         '''
         If exchanges configured then bind the queue to it
         '''
-        if "exchanges" in self._config:
-            for ex in self._config['exchanges']:
-                LOGGER.debug('Binding %s to %s', ex, self._config["queue"])
+        if "exchanges" in self._queue:
+            for ex in self._queue['exchanges']:
+                LOGGER.debug('Binding %s to %s', ex, self._queue["queue"])
                 ex_name = ex
                 if isinstance(ex, dict):
                     if "name" not in ex:
@@ -125,7 +125,7 @@ class Connection:
                             "Invalid consumer configuration: %s" %
                             (json.dumps(ex)))
                     ex_name = ex["name"]
-                self._channel.queue_bind(self._config["queue"], ex_name)
+                self._channel.queue_bind(self._queue["queue"], ex_name)
 
     def acknowledge_message(self, delivery_tag):
         '''

@@ -1,14 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import datetime
-from traceback import format_tb
-
-import pika
-
-from klein_config import config as common_config
 from .connect import Connection
-from ..synchronous.publisher import Publisher
 from ..util import KleinQueueError
 
 LOGGER = logging.getLogger(__name__)
@@ -19,17 +12,13 @@ class Consumer(Connection):
     Consumer class
     '''
 
-    def __init__(self, config, handler_fn=None):
-        self._local_config = config
+    def __init__(self, config, key, handler_fn=None):
+        self._queue = config.get(key)
+        self._config = config
         self._handler_fn = handler_fn
         self._consumer_tag = None
-        if config.get('error') is None:
-            self._error_publisher = Publisher(common_config.get('error'))
-        else:
-            self._error_publisher = Publisher(config.get('error'))
-        self._error_publisher.connect()
 
-        super().__init__(config)
+        super().__init__(config, key)
 
     def set_handler(self, handler_fn):
         self._handler_fn = handler_fn
@@ -38,7 +27,7 @@ class Consumer(Connection):
         LOGGER.debug('Issuing consumer related RPC commands')
         self.add_on_cancel_callback()
         self._consumer_tag = self._channel.basic_consume(
-            on_message_callback=self.on_message, queue=common_config.get("consumer.queue"))
+            on_message_callback=self.on_message, queue=self._queue["queue"])
 
     def on_message(self, channel, basic_deliver, properties, body):
         '''
@@ -54,7 +43,7 @@ class Consumer(Connection):
         LOGGER.debug('Received message # %s from %s: %s',
                      basic_deliver.delivery_tag, properties.app_id, body)
 
-        auto_ack = common_config.get("consumer.auto_acknowledge", True)
+        auto_ack = self._queue["auto_acknowledge"]
 
         if auto_ack:
             LOGGER.info("Auto-acknowledge message # %s", basic_deliver.delivery_tag)
@@ -67,25 +56,9 @@ class Consumer(Connection):
                 body), basic_deliver=basic_deliver, properties=properties)
         except (json.decoder.JSONDecodeError, json.JSONDecodeError) as err:
             LOGGER.error("unable to process message %s : %s", body, str(err))
-
         except KleinQueueError as kqe:
-            excptn = kqe
-            if kqe.__cause__ is not None and isinstance(kqe.__cause__, Exception):
-                excptn = kqe.__cause__
-
-            headers = {
-                "x-consumer": self._local_config.get("name", "Unknown"),
-                "x-datetime": datetime.datetime.now().isoformat(),
-                "x-exception": str(type(excptn)),
-                "x-message": str(excptn),
-                "x-queue": self._local_config["queue"],
-                "x-stack-trace": "\n".join(format_tb(excptn.__traceback__))
-            }
-
-            self._error_publisher.publish(
-                json.loads(body),
-                pika.BasicProperties(headers=headers, content_type='application/json')
-            )
+            kqe.body = json.dumps(body)
+            raise kqe
 
         if result is not None and callable(result):
             result(self, channel, basic_deliver, properties)

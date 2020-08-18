@@ -1,54 +1,56 @@
 # -*- coding: utf-8 -*-
 import time
 import requests
-from klein_config import config
 
 # TODO: Implement more robust distributed caching mechanism
 
-ttl = config.get('rabbitmq.api.list_queues.cache', 0)
-cache = {}
 
+class ApiClient:
 
-def list_queues(exchange, flush=False):
-    """
-    utility to retrieve queues attached to exchange
-    configured user for connection should have
-    management permissions
-    """
+    def __init__(self, config):
+        self._config = config
+        self._cache = {}
 
-    if flush:
-        del cache[exchange]
+    def list_queues(self, exchange, flush=False):
+        """
+        utility to retrieve queues attached to exchange
+        configured user for connection should have
+        management permissions
+        """
 
-    if exchange in cache and "timestamp" in cache[exchange]:
-        diff = time.time() - cache[exchange]["timestamp"]
-        if diff >= ttl:
-            del cache[exchange]
+        if flush:
+            del self._cache[exchange]
 
-    if exchange in cache and "queues" in cache[exchange]:
-        return cache[exchange]["queues"]
+        if exchange in self._cache and "timestamp" in self._cache[exchange]:
+            diff = time.time() - self._cache[exchange]["timestamp"]
+            if diff >= self._config.get('rabbitmq.api.list_queues.cache', 0):
+                del self._cache[exchange]
 
-    host = config.get("rabbitmq.host")
-    if isinstance(host, list):
-        host = host[0]
+        if exchange in self._cache and "queues" in self._cache[exchange]:
+            return self._cache[exchange]["queues"]
 
-    # TODO: Implement other vhosts than default.
-    endpoint = "/api/exchanges/%%2f/%s/bindings/source" % exchange
-    url = 'http://%s:%s%s' % (
-        host,
-        config.get("rabbitmq.management_port"),
-        endpoint
-    )
+        host = self._config.get("rabbitmq.host")
+        if isinstance(host, list):
+            host = host[0]
 
-    response = requests.get(url, auth=(
-        config.get("rabbitmq.username"),
-        config.get("rabbitmq.password"))
-    )
-    queues = [q["destination"]
-              for q in response.json() if q["destination_type"] == "queue"]
+        # TODO: Implement other vhosts than default.
+        endpoint = "/api/exchanges/%%2f/%s/bindings/source" % exchange
+        url = 'http://%s:%s%s' % (
+            host,
+            self._config.get("rabbitmq.management_port"),
+            endpoint
+        )
 
-    cache[exchange] = {
-        "queues": queues,
-        "timestamp": time.time()
-    }
+        response = requests.get(url, auth=(
+            self._config.get("rabbitmq.username"),
+            self._config.get("rabbitmq.password"))
+        )
+        queues = [q["destination"]
+                  for q in response.json() if q["destination_type"] == "queue"]
 
-    return queues
+        self._cache[exchange] = {
+            "queues": queues,
+            "timestamp": time.time()
+        }
+
+        return queues

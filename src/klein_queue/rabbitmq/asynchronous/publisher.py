@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 
 class Publisher(Connection):
 
-    def __init__(self, config):
+    def __init__(self, config, key):
         self._publish_interval = config["publishInterval"] if "publishInterval" in config else 1
         self._messages = deque([])
         self._deliveries = []
@@ -21,7 +21,7 @@ class Publisher(Connection):
         self._nacked = 0
         self._message_number = 0
         self._stopping = False
-        super().__init__(config)
+        super().__init__(config, key)
 
     def start_activity(self):
         LOGGER.debug('Issuing consumer related RPC commands')
@@ -56,7 +56,7 @@ class Publisher(Connection):
         if self._stopping:
             return
 
-        LOGGER.debug('Schedueling next message for %0.1f seconds',
+        LOGGER.debug('Scheduling next message for %0.1f seconds',
                      self._publish_interval)
         self._connection.ioloop.call_later(self._publish_interval,
                                            self.publish_message)
@@ -74,12 +74,11 @@ class Publisher(Connection):
         message = self._messages.popleft()
         print("INSIDE", message)
 
-        properties = pika.BasicProperties(app_id='example-publisher',
-                                          content_type='application/json',
+        properties = pika.BasicProperties(content_type='application/json',
                                           headers=message)
 
-        LOGGER.debug('Publishing message to queue %s', self._config["queue"])
-        self._channel.basic_publish('', self._config["queue"],
+        LOGGER.debug('Publishing message to queue %s', self._queue["queue"])
+        self._channel.basic_publish('', self._queue["queue"],
                                     json.dumps(message),
                                     properties)
 

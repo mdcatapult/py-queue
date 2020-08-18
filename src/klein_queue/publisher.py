@@ -5,26 +5,28 @@ klein_queue.publisher
 import os
 import logging
 import json
-from klein_config import config
-from .rabbitmq.publisher import publish as QueuePublish
-from .rabbitmq.publisher import requeue as QueueRequeue
-from .rabbitmq.publisher import error as QueueError
-from .rabbitmq.publisher import supervise as QueueSupervisor
-
+from .rabbitmq.publisher import publish
 
 LOGGER = logging.getLogger(__name__)
 
 
-def publish(data):
+def rabbit_publish(config, key, data):
     '''
-    Publish data to configured queue
+    Publish data to queue defined on config key
+
+    NOTE: This is a convenience function. Each call will create a new connection to rabbit.
+    Use the Publisher class for a persistent connection.
     '''
-    QueuePublish(data)
+    publish(config, key, data)
 
 
-def requeue(data, **kwargs):
+def requeue(publisher, config, data, on_limit_reached=None, **kwargs):
     '''
-    publish data back on to queue being consumed
+    convenience function handles requeue logic before publishing the
+    given data with the given publisher
+    executes callback on data if requeue limit is both found and exceeded.
+
+    :keyword on_limit_reached -- Callback to execute on data if requeue limit is reached.
     '''
     if "klein.requeued" in data:
         data["klein.requeued"] = data["klein.requeued"] + 1
@@ -39,22 +41,7 @@ def requeue(data, **kwargs):
         data["path"] = os.getcwd()
         data["message"] = f"Max Requeue limit ({limit}) hit"
         LOGGER.error('Requeue Error: %s', json.dumps(data))
-        QueueError(data)
+        if on_limit_reached:
+            on_limit_reached(data)
     else:
-        QueueRequeue(data)
-
-
-def error(data):
-    '''
-    publish data to error queue
-    '''
-    LOGGER.debug(json.dumps(data))
-    QueueError(data)
-
-
-def supervise(data):
-    '''
-    publish data to supervisor queue
-    '''
-    LOGGER.debug(json.dumps(data))
-    QueueSupervisor(data)
+        publisher.publish(data)

@@ -41,11 +41,11 @@ class Publisher(Connection):
         routing_key = ''
         exchange = ''
 
-        if "exchange" in self._config:
-            exchange = self._config["exchange"]
+        if "exchange" in self._queue:
+            exchange = self._queue["exchange"]
 
-        if "queue" in self._config:
-            routing_key = self._config["queue"]
+        if "queue" in self._queue:
+            routing_key = self._queue["queue"]
 
         if not exchange and not routing_key:
             print('Unable to publish message no valid routing key or exchange defined')
