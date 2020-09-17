@@ -275,12 +275,6 @@ class Connection:
         if self._channel:
             self.close_channel()
 
-    def theadsafe_call(self, cb):
-        '''
-        execute a callback in the same context as the ioloop
-        '''
-        self._connection.ioloop.call_later(0, cb)
-
     def close_channel(self):
         '''
         close channel

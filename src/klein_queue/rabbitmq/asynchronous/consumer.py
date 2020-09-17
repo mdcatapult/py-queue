@@ -35,7 +35,7 @@ class MessageHandlerThread(Thread):
 
         if auto_ack:
             LOGGER.info("Auto-acknowledge message # %s", self._basic_deliver.delivery_tag)
-            self._consumer.theadsafe_call(ack_cb)
+            self._consumer.threadsafe_call(ack_cb)
 
         result = None
 
@@ -52,7 +52,7 @@ class MessageHandlerThread(Thread):
             result(self, self._channel, self._basic_deliver, self._properties)
         elif result is not False and not auto_ack:
             LOGGER.info("Acknowledge on completion the message # %s", self._basic_deliver.delivery_tag)
-            self._consumer.theadsafe_call(ack_cb)
+            self._consumer.threadsafe_call(ack_cb)
 
 
 class Consumer(Connection):
@@ -78,6 +78,12 @@ class Consumer(Connection):
         self._consumer_tag = self._channel.basic_consume(
             on_message_callback=self.on_message, queue=self._queue["queue"])
 
+    def threadsafe_call(self, cb):
+        '''
+        execute a callback in the same context as the ioloop
+        '''
+        self._connection.ioloop.call_later(0, cb)
+
     def on_message(self, channel, basic_deliver, properties, body):
         '''
         Checks if we're ready to consume another message, and if so starts a MessageHandlerThread to do it
@@ -93,8 +99,7 @@ class Consumer(Connection):
         else:
             # Requeue the message if we're not ready for another
             self.nack_message(basic_deliver.delivery_tag, False, True)
-        
-
+    
     def stop_activity(self):
         if self._channel:
             LOGGER.debug('Sending a Basic.Cancel RPC command to RabbitMQ')
