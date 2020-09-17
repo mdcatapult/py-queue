@@ -122,6 +122,7 @@ class Connection:
         LOGGER.debug('Creating a new channel')
         self._connection.channel(on_open_callback=self.on_channel_open)
 
+
     def on_channel_open(self, channel):
         '''
         on successful open of channel then bind close callback
@@ -243,6 +244,13 @@ class Connection:
         LOGGER.debug('Acknowledging message %s', delivery_tag)
         self._channel.basic_ack(delivery_tag)
 
+    def nack_message(self, delivery_tag, multiple, requeue):
+        '''
+        nack message (negative acknowledgement)
+        '''
+        LOGGER.debug('NACK message %s', delivery_tag)
+        self._channel.basic_nack(delivery_tag, multiple, requeue)
+
     def on_cancelok(self, unused_frame):
         # pylint: disable=unused-argument
         '''
@@ -266,6 +274,12 @@ class Connection:
             'Activity was cancelled remotely, shutting down: %r', method_frame)
         if self._channel:
             self.close_channel()
+
+    def theadsafe_call(self, cb):
+        '''
+        execute a callback in the same context as the ioloop
+        '''
+        self._connection.ioloop.call_later(0, cb)
 
     def close_channel(self):
         '''
