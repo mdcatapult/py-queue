@@ -30,7 +30,7 @@ class MessageHandlerThread(Thread):
         LOGGER.debug('Received message # %s from %s: %s',
                      self._basic_deliver.delivery_tag, self._properties.app_id, self._body)
 
-        auto_ack = self._consumer._queue["auto_acknowledge"]
+        auto_ack = self._consumer._queue.get("auto_acknowledge", True)
         ack_cb = functools.partial(self._consumer.acknowledge_message, self._basic_deliver.delivery_tag)
 
         if auto_ack:
