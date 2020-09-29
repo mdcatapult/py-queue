@@ -2,21 +2,16 @@
 import json
 import logging
 import functools
-from threading import Thread
+import threading
+from queue import Queue
 from .connect import Connection
 from ..util import KleinQueueError
 
 LOGGER = logging.getLogger(__name__)
 
-
-class MessageHandlerThread(Thread):
-    def __init__(self, consumer, channel, basic_deliver, properties, body):
+class MessageWorker(threading.Thread):
+    def __init__(self, consumer):
         self._consumer = consumer
-        self._channel = channel
-        self._basic_deliver = basic_deliver
-        self._properties = properties
-        self._body = body
-
         super().__init__()
 
     def run(self):
@@ -27,32 +22,27 @@ class MessageHandlerThread(Thread):
         callable and execute otherwise acknowledge if not already done
         '''
 
-        LOGGER.debug('Received message # %s from %s: %s',
-                     self._basic_deliver.delivery_tag, self._properties.app_id, self._body)
+        while True:
+            # get a message from the queue (blocking until one is available)
+            (channel, basic_deliver, properties, body, auto_ack) = self._consumer._message_queue.get(True)
 
-        auto_ack = self._consumer._queue.get("auto_acknowledge", True)
-        ack_cb = functools.partial(self._consumer.acknowledge_message, self._basic_deliver.delivery_tag)
+            result = None
 
-        if auto_ack:
-            LOGGER.info("Auto-acknowledge message # %s", self._basic_deliver.delivery_tag)
-            self._consumer.threadsafe_call(ack_cb)
+            try:
+                result = self._consumer._handler_fn(json.loads(
+                    body), basic_deliver=basic_deliver, properties=properties)
+            except (json.decoder.JSONDecodeError, json.JSONDecodeError) as err:
+                LOGGER.error("unable to process message %s : %s", body, str(err))
+            except KleinQueueError as kqe:
+                kqe.body = json.dumps(body)
+                raise kqe
 
-        result = None
-
-        try:
-            result = self._consumer._handler_fn(json.loads(
-                self._body), basic_deliver=self._basic_deliver, properties=self._properties)
-        except (json.decoder.JSONDecodeError, json.JSONDecodeError) as err:
-            LOGGER.error("unable to process message %s : %s", self._body, str(err))
-        except KleinQueueError as kqe:
-            kqe.body = json.dumps(self._body)
-            raise kqe
-
-        if result is not None and callable(result):
-            result(self, self._channel, self._basic_deliver, self._properties)
-        elif result is not False and not auto_ack:
-            LOGGER.info("Acknowledge on completion the message # %s", self._basic_deliver.delivery_tag)
-            self._consumer.threadsafe_call(ack_cb)
+            if result is not None and callable(result):
+                result(self, channel, basic_deliver, properties)
+            elif result is not False and not auto_ack:
+                LOGGER.info("Acknowledge on completion the message # %s", basic_deliver.delivery_tag)
+                ack_cb = functools.partial(self._consumer.acknowledge_message, basic_deliver.delivery_tag)
+                self._consumer.threadsafe_call(ack_cb)
 
 
 class Consumer(Connection):
@@ -60,12 +50,17 @@ class Consumer(Connection):
     Consumer class
     '''
 
-    def __init__(self, config, key, handler_fn=None):
+    def __init__(self, config, key, handler_fn=None, workers=1):
         self._queue = config.get(key)
         self._config = config
         self._handler_fn = handler_fn
         self._handler_thread = None
         self._consumer_tag = None
+        self._message_queue = Queue()
+        # spawn a number of worker threads (defaults to 1)
+        for i in range(workers):
+            worker = MessageWorker(self)
+            worker.start()
 
         super().__init__(config, key)
 
@@ -78,12 +73,6 @@ class Consumer(Connection):
         self._consumer_tag = self._channel.basic_consume(
             on_message_callback=self.on_message, queue=self._queue["queue"])
 
-    def threadsafe_call(self, cb):
-        '''
-        execute a callback in the same context as the ioloop
-        '''
-        self._connection.ioloop.call_later(0, cb)
-
     def on_message(self, channel, basic_deliver, properties, body):
         '''
         Checks if we're ready to consume another message, and if so starts a MessageHandlerThread to do it
@@ -93,12 +82,16 @@ class Consumer(Connection):
         body: bytes
         '''
 
-        if self._handler_thread is None or not self._handler_thread.is_alive():
-            self._handler_thread = MessageHandlerThread(self, channel, basic_deliver, properties, body)
-            self._handler_thread.start()
-        else:
-            # Requeue the message if we're not ready for another
-            self.nack_message(basic_deliver.delivery_tag, False, True)
+        LOGGER.debug('Received message # %s from %s: %s',
+                     basic_deliver.delivery_tag, properties.app_id, body)
+
+        auto_ack = self._queue.get("auto_acknowledge", True)
+
+        if auto_ack:
+            LOGGER.info("Auto-acknowledge message # %s", basic_deliver.delivery_tag)
+            self.acknowledge_message(basic_deliver.delivery_tag)
+
+        self._message_queue.put((channel, basic_deliver, properties, body, auto_ack))
     
     def stop_activity(self):
         if self._channel:
