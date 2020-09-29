@@ -2,8 +2,7 @@
 # pylint: disable=import-error
 import json
 import logging
-from collections import deque
-
+from queue import Queue
 import pika
 
 from .connect import Connection
@@ -15,7 +14,7 @@ class Publisher(Connection):
 
     def __init__(self, config, key):
         self._publish_interval = config["publishInterval"] if "publishInterval" in config else 1
-        self._messages = deque([])
+        self._messages = Queue()
         self._deliveries = []
         self._acked = 0
         self._nacked = 0
@@ -61,21 +60,18 @@ class Publisher(Connection):
         self._connection.ioloop.call_later(self._publish_interval,
                                            self.publish_message)
 
+
     def publish_message(self):
         if self._stopping:
             LOGGER.debug(
                 'Publisher currently stopping, unable to publish messages at this time')
             return
 
-        if not self._messages:
+        if self._messages.empty():
             # no messages to publish... do nothing
             return
 
-        message = self._messages.popleft()
-        print("INSIDE", message)
-
-        properties = pika.BasicProperties(content_type='application/json',
-                                          headers=message)
+        (message, properties) = self._messages.get(False)
 
         LOGGER.debug('Publishing message to queue %s', self._queue["queue"])
         self._channel.basic_publish('', self._queue["queue"],
@@ -87,7 +83,7 @@ class Publisher(Connection):
         LOGGER.debug('Published message # %i', self._message_number)
         self.schedule_next_message()
 
-    def add(self, message):
+    def add(self, message, properties=None):
         LOGGER.debug(
             'Adding message to internal stack ready for publishing')
-        self._messages.append(message)
+        self._messages.put((message, properties))
