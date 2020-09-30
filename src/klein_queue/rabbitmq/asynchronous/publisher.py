@@ -3,7 +3,6 @@
 import json
 import logging
 from queue import Queue
-import pika
 
 from .connect import Connection
 
