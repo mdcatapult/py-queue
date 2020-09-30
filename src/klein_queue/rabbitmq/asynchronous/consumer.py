@@ -62,6 +62,8 @@ class Consumer(Connection):
         self._handler_thread = None
         self._consumer_tag = None
         self._message_queue = Queue()
+
+        LOGGER.info('Starting %d MessageWorker threads', workers)
         # spawn a number of worker threads (defaults to 1)
         for _ in range(workers):
             worker = MessageWorker(self)
