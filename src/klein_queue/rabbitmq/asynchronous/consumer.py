@@ -90,7 +90,7 @@ class Consumer(Connection):
         LOGGER.debug('Received message # %s from %s: %s',
                      basic_deliver.delivery_tag, properties.app_id, body)
 
-        auto_ack = self._queue.get("auto_acknowledge", True)
+        auto_ack = self._queue.get("auto_acknowledge", False)
 
         if auto_ack:
             LOGGER.info("Auto-acknowledge message # %s", basic_deliver.delivery_tag)
