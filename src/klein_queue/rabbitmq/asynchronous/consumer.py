@@ -9,14 +9,19 @@ from ..util import KleinQueueError
 
 LOGGER = logging.getLogger(__name__)
 
+
 class MessageWorker(threading.Thread):
+    '''
+    Message worker class
+    '''
+
     def __init__(self, consumer):
         self._consumer = consumer
         super().__init__()
 
     def run(self):
         '''
-        On receipt of message check to see if auto acknowledge required
+        Loop and get messages from the message queue when they're available
         Pass message to consumers handler function
         If result returned from handler check to see if it is
         callable and execute otherwise acknowledge if not already done
@@ -75,7 +80,7 @@ class Consumer(Connection):
 
     def on_message(self, channel, basic_deliver, properties, body):
         '''
-        Checks if we're ready to consume another message, and if so starts a MessageHandlerThread to do it
+        Handles an incoming message, adds it to the message queue to be processed by the worker threads
         channel: pika.Channel 
         basic_deliver: pika.spec.Basic.Deliver
         properties: pika.spec.BasicProperties 
