@@ -2,8 +2,7 @@
 # pylint: disable=import-error
 import json
 import logging
-from queue import Queue
-
+from collections import deque
 from .connect import Connection
 
 LOGGER = logging.getLogger(__name__)
@@ -13,7 +12,7 @@ class Publisher(Connection):
 
     def __init__(self, config, key):
         self._publish_interval = config["publishInterval"] if "publishInterval" in config else 1
-        self._messages = Queue()
+        self._messages = deque()
         self._deliveries = []
         self._acked = 0
         self._nacked = 0

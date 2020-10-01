@@ -20,7 +20,7 @@ def connect(q):
     return success
 
 
-def publish(config, key, message):
+def publish(config, key, message, properties=None):
     '''
     Publish message to queue with given key in the config.
 
@@ -37,4 +37,4 @@ def publish(config, key, message):
     while not connected:
         connected = connect(queue)
 
-    queue.publish(message)
+    queue.publish(message, properties)
