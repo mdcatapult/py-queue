@@ -12,7 +12,7 @@ class Publisher(Connection):
 
     def __init__(self, config, key):
         self._publish_interval = config["publishInterval"] if "publishInterval" in config else 1
-        self._messages = deque()
+        self._messages = deque([])
         self._deliveries = []
         self._acked = 0
         self._nacked = 0
@@ -65,11 +65,11 @@ class Publisher(Connection):
                 'Publisher currently stopping, unable to publish messages at this time')
             return
 
-        if self._messages.empty():
+        if not self._messages:
             # no messages to publish... do nothing
             return
 
-        (message, properties) = self._messages.get(False)
+        (message, properties) = self._messages.popleft()
 
         LOGGER.debug('Publishing message to queue %s', self._queue["queue"])
         self._channel.basic_publish('', self._queue["queue"],
@@ -84,4 +84,4 @@ class Publisher(Connection):
     def add(self, message, properties=None):
         LOGGER.debug(
             'Adding message to internal stack ready for publishing')
-        self._messages.put((message, properties))
+        self._messages.append((message, properties))
