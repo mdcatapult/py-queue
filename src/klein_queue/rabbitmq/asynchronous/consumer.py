@@ -104,6 +104,9 @@ class Consumer(Connection):
 
         auto_ack = self._queue.get("auto_acknowledge", False)
 
+        # decode
+        body = body.decode('utf-8')
+
         if auto_ack:
             LOGGER.info("Auto-acknowledge message # %s", basic_deliver.delivery_tag)
             self.acknowledge_message(basic_deliver.delivery_tag)
