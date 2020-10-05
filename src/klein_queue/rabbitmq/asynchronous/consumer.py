@@ -35,14 +35,19 @@ class MessageWorker(threading.Thread):
 
                 result = None
 
+                nack_cb = functools.partial(self._consumer.negative_acknowledge_message, basic_deliver.delivery_tag, False, False)
+
                 try:
                     result = self._consumer._handler_fn(json.loads(
                         body), basic_deliver=basic_deliver, properties=properties)
-                except (json.decoder.JSONDecodeError, json.JSONDecodeError) as err:
-                    LOGGER.error("unable to process message %s : %s", body, str(err))
+
                 except KleinQueueError as kqe:
                     kqe.body = json.dumps(body)
+                    self._consumer.threadsafe_call(nack_cb)
                     raise kqe
+                except Exception as err:
+                    self._consumer.threadsafe_call(nack_cb)
+                    raise err
 
                 if result is not None and callable(result):
                     result(self, channel, basic_deliver, properties)
@@ -53,6 +58,9 @@ class MessageWorker(threading.Thread):
 
             except queue.Empty:
                 continue
+            except Exception:
+                continue
+
 
     def stop(self):
         self._closing = True
@@ -89,6 +97,13 @@ class Consumer(Connection):
         self.add_on_cancel_callback()
         self._consumer_tag = self._channel.basic_consume(
             on_message_callback=self.on_message, queue=self._queue["queue"])
+
+    def negative_acknowledge_message(self, delivery_tag, multiple, requeue):
+        '''
+        Sends a negative acknowledgement (NACK)
+        '''
+        LOGGER.debug("Sending negative acknowledgement on message # %s, requeue: %s", delivery_tag, requeue)
+        self._channel.basic_nack(delivery_tag, multiple, requeue)
 
     def on_message(self, channel, basic_deliver, properties, body):
         '''
