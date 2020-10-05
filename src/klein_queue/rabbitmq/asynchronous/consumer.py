@@ -35,19 +35,15 @@ class MessageWorker(threading.Thread):
 
                 result = None
 
-                nack_cb = functools.partial(self._consumer.negative_acknowledge_message, basic_deliver.delivery_tag, False, False)
-
                 try:
                     result = self._consumer._handler_fn(json.loads(
                         body), basic_deliver=basic_deliver, properties=properties)
 
                 except KleinQueueError as kqe:
                     kqe.body = json.dumps(body)
-                    self._consumer.threadsafe_call(nack_cb)
-                    raise kqe
+                    result = False
                 except (json.decoder.JSONDecodeError, json.JSONDecodeError, UnicodeDecodeError) as err:
-                    self._consumer.threadsafe_call(nack_cb)
-                    raise err
+                    result = False
 
                 if result is not None and callable(result):
                     result(self, channel, basic_deliver, properties)
@@ -55,10 +51,11 @@ class MessageWorker(threading.Thread):
                     LOGGER.info("Acknowledge on completion the message # %s", basic_deliver.delivery_tag)
                     ack_cb = functools.partial(self._consumer.acknowledge_message, basic_deliver.delivery_tag)
                     self._consumer.threadsafe_call(ack_cb)
+                elif result is False and not auto_ack:
+                    nack_cb = functools.partial(self._consumer.negative_acknowledge_message, basic_deliver.delivery_tag, False, False)
+                    self._consumer.threadsafe_call(nack_cb)
 
             except queue.Empty:
-                continue
-            except (KleinQueueError, json.decoder.JSONDecodeError, json.JSONDecodeError, UnicodeDecodeError):
                 continue
 
 
