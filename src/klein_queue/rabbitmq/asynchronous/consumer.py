@@ -58,7 +58,7 @@ class MessageWorker(threading.Thread):
 
             except queue.Empty:
                 continue
-            except Exception:
+            except (KleinQueueError, json.decoder.JSONDecodeError, json.JSONDecodeError, UnicodeDecodeError):
                 continue
 
 
