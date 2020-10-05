@@ -39,10 +39,7 @@ class MessageWorker(threading.Thread):
                     result = self._consumer._handler_fn(json.loads(
                         body), basic_deliver=basic_deliver, properties=properties)
 
-                except KleinQueueError as kqe:
-                    kqe.body = json.dumps(body)
-                    result = False
-                except (json.decoder.JSONDecodeError, json.JSONDecodeError, UnicodeDecodeError) as err:
+                except (KleinQueueError, json.decoder.JSONDecodeError, json.JSONDecodeError, UnicodeDecodeError):
                     result = False
 
                 if result is not None and callable(result):
