@@ -45,9 +45,7 @@ class MessageWorker(threading.Thread):
                     kqe.body = json.dumps(body)
                     self._consumer.threadsafe_call(nack_cb)
                     raise kqe
-                except Exception as err:
-                    # pylint: disable=broad-except
-                    # we want to catch all exceptions to make sure we send a nack and continue processing
+                except (json.decoder.JSONDecodeError, json.JSONDecodeError, UnicodeDecodeError) as err:
                     self._consumer.threadsafe_call(nack_cb)
                     raise err
 
