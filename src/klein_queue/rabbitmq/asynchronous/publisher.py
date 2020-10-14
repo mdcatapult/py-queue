@@ -31,6 +31,12 @@ class ThreadedPublisher(Thread):
         ''' 
         self._publisher.add(message, properties)
 
+    def publish(self, message, properties=None):
+        '''
+        Adds a message to the internal queue - alias of add
+        '''
+        self.add(message, properties)
+
     def stop(self):
         '''
         Calls the publisher's stop message within the context of the IO loop
