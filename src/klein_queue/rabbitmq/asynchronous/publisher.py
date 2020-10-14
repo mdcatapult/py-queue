@@ -3,9 +3,6 @@
 import json
 import logging
 from collections import deque
-
-import pika
-
 from .connect import Connection
 
 LOGGER = logging.getLogger(__name__)
@@ -61,6 +58,7 @@ class Publisher(Connection):
         self._connection.ioloop.call_later(self._publish_interval,
                                            self.publish_message)
 
+
     def publish_message(self):
         if self._stopping:
             LOGGER.debug(
@@ -71,11 +69,7 @@ class Publisher(Connection):
             # no messages to publish... do nothing
             return
 
-        message = self._messages.popleft()
-        print("INSIDE", message)
-
-        properties = pika.BasicProperties(content_type='application/json',
-                                          headers=message)
+        (message, properties) = self._messages.popleft()
 
         LOGGER.debug('Publishing message to queue %s', self._queue["queue"])
         self._channel.basic_publish('', self._queue["queue"],
@@ -87,7 +81,7 @@ class Publisher(Connection):
         LOGGER.debug('Published message # %i', self._message_number)
         self.schedule_next_message()
 
-    def add(self, message):
+    def add(self, message, properties=None):
         LOGGER.debug(
             'Adding message to internal stack ready for publishing')
-        self._messages.append(message)
+        self._messages.append((message, properties))

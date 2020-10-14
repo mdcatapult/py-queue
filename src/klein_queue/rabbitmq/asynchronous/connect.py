@@ -244,13 +244,6 @@ class Connection:
         LOGGER.debug('Acknowledging message %s', delivery_tag)
         self._channel.basic_ack(delivery_tag)
 
-    def nack_message(self, delivery_tag, multiple, requeue):
-        '''
-        nack message (negative acknowledgement)
-        '''
-        LOGGER.debug('NACK message %s', delivery_tag)
-        self._channel.basic_nack(delivery_tag, multiple, requeue)
-
     def on_cancelok(self, unused_frame):
         # pylint: disable=unused-argument
         '''
@@ -318,6 +311,13 @@ class Connection:
         '''
         LOGGER.debug('Closing connection')
         self._connection.close()
+
+    def threadsafe_call(self, cb):
+        '''
+        Runs a callback in the context of the IO loop
+        :param cb: a callback function
+        '''
+        self._connection.ioloop.call_later(0, cb)
 
     @abc.abstractmethod
     def stop_activity(self):
