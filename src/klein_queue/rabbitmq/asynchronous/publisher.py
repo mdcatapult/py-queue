@@ -2,10 +2,9 @@
 # pylint: disable=import-error
 import json
 import logging
-import functools
+from threading import Thread
 from collections import deque
 from .connect import Connection
-from threading import Thread
 
 LOGGER = logging.getLogger(__name__)
 
