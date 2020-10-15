@@ -2,11 +2,46 @@
 # pylint: disable=import-error
 import json
 import logging
+from threading import Thread
 from collections import deque
 from .connect import Connection
 
 LOGGER = logging.getLogger(__name__)
 
+class ThreadedPublisher(Thread):
+    '''
+    Threaded wrapper for the asynchronous publisher class
+    '''
+
+    def __init__(self, config, key):
+        self._config = config
+        self._key = key
+        super().__init__()
+
+    def run(self):
+        '''
+        Start the publisher & run it's IO loop within the thread
+        '''
+        self._publisher = Publisher(self._config, self._key)
+        self._publisher.run()
+
+    def add(self, message, properties=None):
+        '''
+        Adds a message to the internal queue to be published
+        ''' 
+        self._publisher.add(message, properties)
+
+    def publish(self, message, properties=None):
+        '''
+        Adds a message to the internal queue - alias of add
+        '''
+        self.add(message, properties)
+
+    def stop(self):
+        '''
+        Calls the publisher's stop message within the context of the IO loop
+        '''
+        self._publisher.threadsafe_call(self._publisher.stop)
 
 class Publisher(Connection):
 
