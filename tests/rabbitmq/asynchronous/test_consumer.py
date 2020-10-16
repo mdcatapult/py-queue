@@ -10,9 +10,12 @@ class CustomThrowable(Exception):
 class TestConsumer:
 
     def test_consumption(self):
+        self._event = threading.Event()
+
         def handle_handle(cons):
             def handler_fn(msg, **kwargs):
                 assert msg == {'msg': 'test_message'}
+                self._event.set()
                 cons.stop()
 
             return handler_fn
@@ -26,13 +29,13 @@ class TestConsumer:
                 "password": "doclib",
             },
             "consumer": {
-                "queue": "klein.prefetch",
+                "queue": "pytest",
                 "auto_acknowledge": True,
                 "prefetch": 1,
                 "create_on_connect": True,
             },
             "publisher": {
-                "queue": "publish"
+                "queue": "pytest"
             }
         })
 
@@ -48,6 +51,9 @@ class TestConsumer:
         publisher.connect()
         publisher.publish_message({'msg': 'test_message'})
 
-        time.sleep(0.5)
+        # timeout = 10 seconds on waiting for message to arrive
+        message_received_in_time = self._event.wait(10)
+        assert message_received_in_time
+
         consumer.stop()
 
