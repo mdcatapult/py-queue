@@ -1,6 +1,5 @@
 import argparse
 import threading
-from unittest import mock
 from random import randint
 import time
 
@@ -58,7 +57,6 @@ class TestConsumer:
 
         consumer.stop()
 
-    
     def test_worker_concurrency(self):
         workers = randint(2, 5)
         self._events = []
