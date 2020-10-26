@@ -2,6 +2,10 @@
 
 Module to abstract queues. Currently only implements RabbitMQ, roadmap to include alternatives such as Kafka.
 
+## Documentation
+
+API docs can be found at
+
 ## Environment Variables
 
 
