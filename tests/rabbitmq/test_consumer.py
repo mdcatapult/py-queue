@@ -43,7 +43,7 @@ class TestConsumer:
         consumer = Consumer(config, "consumer")
         consumer.set_handler(handle_handle(consumer))
 
-        c = threading.Thread(target=consumer._run)
+        c = threading.Thread(target=consumer.run)
         c.start()
 
         from src.klein_queue.rabbitmq.publisher import Publisher
@@ -93,7 +93,7 @@ class TestConsumer:
         # check number of threads spawned
         assert len(consumer._workers) == workers
 
-        c = threading.Thread(target=consumer._run)
+        c = threading.Thread(target=consumer.run)
         c.start()
 
         from src.klein_queue.rabbitmq.publisher import Publisher

@@ -254,7 +254,7 @@ class _Connection:
         LOGGER.debug('Acknowledging message %s', delivery_tag)
         self._channel.basic_ack(delivery_tag)
 
-    def _on_cancelok(self, unused_frame):
+    def on_cancelok(self, unused_frame):
         # pylint: disable=unused-argument
         """
         if cancelled then close channel
@@ -285,7 +285,7 @@ class _Connection:
         LOGGER.debug('Closing the channel')
         self._channel.close()
 
-    def _run(self):
+    def run(self):
         """
         start connection and ioloop
         """

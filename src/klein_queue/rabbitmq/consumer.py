@@ -63,7 +63,7 @@ class Consumer(_Connection):
 
     `key`: The `str` key in the config with specific consumer config, these are:
     ```yaml
-    key:
+    key:                            # i.e. consumer
         queue: 'queue name'         # The name of the rabbitmq queue.
         auto_acknowledge: false     # Whether to auto acknowledge messages as they are read (recommended false).
         prefetch: 10                # The number of unacknowledged messages to read from the queue at once (recommended to
@@ -73,14 +73,37 @@ class Consumer(_Connection):
     ```
 
     ## Example
+    **main.py**
     ```python
     from klein_config.config import EnvironmentAwareConfig
     from src.klein_queue.rabbitmq.consumer import Consumer
+
     config = EnvironmentAwareConfig()       # Read from file specified with `--config`
     def handle_fn(message, **kwargs):       # handler_fn to be called in worker threads.
         print(message)
     consumer = Consumer(config, "consumer", handler_fn)
     consumer.run()
+    ```
+    **config.yaml**
+    ```python
+    rabbitmq:
+        host: [localhost]
+        port: 5672
+        username: guest
+        password: guest
+        heartbeat: 2
+    consumer:
+        name: test.consumer
+        queue: test
+        auto_acknowledge: false
+        prefetch: 2
+        create_on_connect: true
+        error: error
+        workers: 2
+    ```
+    **terminal**
+    ```bash
+    python main.py --config config.yaml
     ```
     """
 
@@ -109,11 +132,11 @@ class Consumer(_Connection):
 
     def start(self):
         """Creates a connection to mongo, starts receiving messages, and starts processing messages with workers."""
-        super()._run()
+        super().run()
 
     def run(self):
         """Creates a connection to mongo, starts receiving messages, and starts processing messages with workers."""
-        super()._run()
+        super().run()
 
     def stop(self):
         """Cleanly closes all worker threads, stops receiving messages, and closes the rabbitmq channel and
@@ -159,7 +182,7 @@ class Consumer(_Connection):
     def _stop_activity(self):
         if self._channel:
             LOGGER.debug('Sending a Basic.Cancel RPC command to RabbitMQ')
-            self._channel.basic_cancel(self._consumer_tag, self._on_cancelok)
+            self._channel.basic_cancel(self._consumer_tag, self.on_cancelok)
 
         # stop worker threads
         for worker in self._workers:

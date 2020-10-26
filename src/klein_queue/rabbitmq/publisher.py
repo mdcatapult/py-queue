@@ -9,9 +9,53 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Publisher(Thread):
-    '''
-    Threaded wrapper for the asynchronous publisher class
-    '''
+    """Multithreaded publisher.
+
+    We use a multithreaded publisher to keep the I/O loop (and heartbeat) alive and maintain a persistent connection.
+    This is more efficient than creating a new connection for every message.
+
+    `config`: The `klein_config.config.EnvironmentAwareConfig` containing connection details to rabbit.
+
+    `key`: The `str` key in the config with specific publisher config, these are:
+    ```yaml
+    key:                            # i.e. upstream
+        queue: 'queue name'         # The name of the rabbitmq queue.
+        create_on_connect: true     # Whether to create a queue on connection.
+    ```
+    ## Example
+    **main.py**
+    ```python
+    from klein_config.config import EnvironmentAwareConfig
+    from src.klein_queue.rabbitmq.consumer import Consumer
+
+    config = EnvironmentAwareConfig()       # Read from file specified with `--config`
+    def handle_fn(message, **kwargs):       # handler_fn to be called in worker threads.
+        print(message)
+    consumer = Consumer(config, "consumer", handler_fn)
+    consumer.run()
+    ```
+    **config.yaml**
+    ```python
+    rabbitmq:
+        host: [localhost]
+        port: 5672
+        username: guest
+        password: guest
+        heartbeat: 2
+    consumer:
+        name: test.consumer
+        queue: test
+        auto_acknowledge: false
+        prefetch: 2
+        create_on_connect: true
+        error: error
+        workers: 2
+    ```
+    **terminal**
+    ```bash
+    python main.py --config config.yaml
+    ```
+    """
 
     def __init__(self, config, key):
         self._publisher = _PublisherWorker(config, key)
@@ -19,9 +63,10 @@ class Publisher(Thread):
 
     def run(self):
         '''
-        Start the publisher & run it's IO loop within the thread
+        Start the publisher & run it's IO   loop within the thread
+        eapiwepi
         '''
-        self._publisher._run()
+        self._publisher.run()
 
     def add(self, message, properties=None):
         '''
