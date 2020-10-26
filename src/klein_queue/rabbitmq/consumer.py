@@ -221,7 +221,7 @@ class Consumer(threading.Thread):
             print(message)
         consumer = Consumer(config, "consumer", handler_fn)
         consumer.start()
-        
+
         ```
         **config.yaml**
         ```python
@@ -263,4 +263,4 @@ class Consumer(threading.Thread):
     def stop(self):
         """Cleanly closes all worker threads, stops receiving messages, and closes the rabbitmq channel and
         connection."""
-        super().stop()
+        self._consumer.threadsafe_call(self._consumer.stop)

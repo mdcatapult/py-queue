@@ -33,8 +33,10 @@ class Publisher(Thread):
 
         config = EnvironmentAwareConfig()       # Read from file specified with `--config`
 
-        publisher = Publisher(config, "consumer")
-        publisher.run() # spawns the publisher thread
+        publisher = Publisher(config, "publisher")
+        publisher.start() # spawns the publisher thread
+
+        publisher.add({'id': 'abc123'}) # sends a message
         
         ```
         **config.yaml**
@@ -45,14 +47,9 @@ class Publisher(Thread):
             username: guest
             password: guest
             heartbeat: 2
-        consumer:
-            name: test.consumer
+        publisher:
             queue: test
-            auto_acknowledge: false
-            prefetch: 2
             create_on_connect: true
-            error: error
-            workers: 2
         ```
         **terminal**
         ```bash
@@ -63,29 +60,34 @@ class Publisher(Thread):
         super().__init__()
 
     def run(self):
-        '''
-        Start the publisher & run it's IO   loop within the thread
-        eapiwepi
-        '''
+        """
+        Start the publisher & run it's IO loop ***within the current thread***. This will block the current thread and is *not recommended*
+        """
         self._publisher.run()
 
     def add(self, message, properties=None):
-        '''
-        Adds a message to the internal queue to be published
-        ''' 
+        """
+        Adds a `message` (`dict`) to the internal queue to be published with the set `properties`
+        """
         self._publisher.publish(message, properties)
 
     def publish(self, message, properties=None):
-        '''
-        Adds a message to the internal queue - alias of add
-        '''
+        """
+        Adds a `message` to the internal queue - alias of `src.klein_queue.rabbitmq.publisher.Publisher.add`
+        """
         self.add(message, properties)
 
     def stop(self):
-        '''
-        Calls the publisher's stop message within the context of the IO loop
-        '''
+        """
+        Stops the publisher and closes the connection to rabbit
+        """
         self._publisher.threadsafe_call(self._publisher.stop)
+
+    def start(self):
+        """
+         Start the publisher & run it's IO loop ***in a seperate thread***.
+        """
+        super().start()
 
 
 class _PublisherWorker(_Connection):

@@ -91,7 +91,7 @@ class TestConsumer:
         consumer = Consumer(config, "consumer", handler_fn)
 
         # check number of threads spawned
-        assert len(consumer._workers) == workers
+        assert len(consumer._consumer._workers) == workers
 
         c = threading.Thread(target=consumer.run)
         c.start()
