@@ -29,13 +29,13 @@ class Publisher(Thread):
         **main.py**
         ```python
         from klein_config.config import EnvironmentAwareConfig
-        from src.klein_queue.rabbitmq.consumer import Consumer
+        from src.klein_queue.rabbitmq.publisher import Publisher
 
         config = EnvironmentAwareConfig()       # Read from file specified with `--config`
-        def handle_fn(message, **kwargs):       # handler_fn to be called in worker threads.
-            print(message)
-        consumer = Consumer(config, "consumer", handler_fn)
-        consumer.run()
+
+        publisher = Publisher(config, "consumer")
+        publisher.run() # spawns the publisher thread
+        
         ```
         **config.yaml**
         ```python
