@@ -1,40 +1,120 @@
 # -*- coding: utf-8 -*-
-'''
-klein_queue.rabbitmq.publisher
-'''
+import json
 import logging
-import pika.exceptions
-from .synchronous.publisher import Publisher
+from threading import Thread
+from collections import deque
+from .connect import Connection
 
 LOGGER = logging.getLogger(__name__)
 
 
-def connect(q):
-    success = False
-    try:
-        LOGGER.debug("QUEUE: Attempting Connection to %s", q._url if hasattr(q, "_url") else "unknown")
-        q.connect()
-        success = True
-    except pika.exceptions.ConnectionClosed:
-        LOGGER.debug("QUEUE: Connection Failed for %s", q._url if hasattr(q, "_url") else "unknown")
-    return success
-
-
-def publish(config, key, message, properties=None):
+class Publisher(Thread):
     '''
-    Publish message to queue with given key in the config.
-
-    NOTE: This is a convenience function. Each call will create a new connection to rabbit.
-    Use the Publisher class for a persistent connection.
+    Threaded wrapper for the asynchronous publisher class
     '''
-    if config.has(key):
-        queue = Publisher(config, key)
-    else:
-        raise EnvironmentError(
-            "No downstream has been configured for publishing")
 
-    connected = False
-    while not connected:
-        connected = connect(queue)
+    def __init__(self, config, key):
+        self._publisher = _PublisherWorker(config, key)
+        super().__init__()
 
-    queue.publish(message, properties)
+    def run(self):
+        '''
+        Start the publisher & run it's IO loop within the thread
+        '''
+        self._publisher.run()
+
+    def add(self, message, properties=None):
+        '''
+        Adds a message to the internal queue to be published
+        ''' 
+        self._publisher.publish(message, properties)
+
+    def publish(self, message, properties=None):
+        '''
+        Adds a message to the internal queue - alias of add
+        '''
+        self.add(message, properties)
+
+    def stop(self):
+        '''
+        Calls the publisher's stop message within the context of the IO loop
+        '''
+        self._publisher.threadsafe_call(self._publisher.stop)
+
+
+class _PublisherWorker(Connection):
+
+    def __init__(self, config, key):
+        self._publish_interval = config["publishInterval"] if "publishInterval" in config else 1
+        self._messages = deque([])
+        self._deliveries = []
+        self._acked = 0
+        self._nacked = 0
+        self._message_number = 0
+        self._stopping = False
+        super().__init__(config, key)
+
+    def start_activity(self):
+        LOGGER.debug('Issuing consumer related RPC commands')
+        self.enable_delivery_confirmations()
+        self.schedule_next_message()
+
+    def stop_activity(self):
+        self._stopping = True
+        self.close_channel()
+        self.close_connection()
+
+    def enable_delivery_confirmations(self):
+        LOGGER.debug('Issuing Confirm.Select RPC command')
+        self._channel.confirm_delivery(self.on_delivery_confirmation)
+
+    def on_delivery_confirmation(self, method_frame):
+        confirmation_type = method_frame.method.NAME.split('.')[1].lower()
+        LOGGER.debug('Received %s for delivery tag: %i',
+                     confirmation_type,
+                     method_frame.method.delivery_tag)
+        if confirmation_type == 'ack':
+            self._acked += 1
+        elif confirmation_type == 'nack':
+            self._nacked += 1
+        self._deliveries.remove(method_frame.method.delivery_tag)
+        LOGGER.debug('Published %i messages, %i have yet to be confirmed, '
+                     '%i were acked and %i were nacked',
+                     self._message_number, len(self._deliveries),
+                     self._acked, self._nacked)
+
+    def schedule_next_message(self):
+        if self._stopping:
+            return
+
+        LOGGER.debug('Scheduling next message for %0.1f seconds',
+                     self._publish_interval)
+        self._connection.ioloop.call_later(self._publish_interval,
+                                           self.__publish_message)
+
+    def __publish_message(self):
+        if self._stopping:
+            LOGGER.debug(
+                'Publisher currently stopping, unable to publish messages at this time')
+            return
+
+        if not self._messages:
+            # no messages to publish... do nothing
+            return
+
+        (message, properties) = self._messages.popleft()
+
+        LOGGER.debug('Publishing message to queue %s', self._queue["queue"])
+        self._channel.basic_publish('', self._queue["queue"],
+                                    json.dumps(message),
+                                    properties)
+
+        self._message_number += 1
+        self._deliveries.append(self._message_number)
+        LOGGER.debug('Published message # %i', self._message_number)
+        self.schedule_next_message()
+
+    def publish(self, message, properties=None):
+        LOGGER.debug(
+            'Adding message to internal stack ready for publishing')
+        self._messages.append((message, properties))

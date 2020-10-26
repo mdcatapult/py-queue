@@ -2,8 +2,6 @@
 import time
 import requests
 
-# TODO: Implement more robust distributed caching mechanism
-
 
 class ApiClient:
 

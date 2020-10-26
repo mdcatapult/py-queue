@@ -5,19 +5,8 @@ klein_queue.publisher
 import os
 import logging
 import json
-from .rabbitmq.publisher import publish
 
 LOGGER = logging.getLogger(__name__)
-
-
-def rabbit_publish(config, key, data):
-    '''
-    Publish data to queue defined on config key
-
-    NOTE: This is a convenience function. Each call will create a new connection to rabbit.
-    Use the Publisher class for a persistent connection.
-    '''
-    publish(config, key, data)
 
 
 def requeue(publisher, config, data, on_limit_reached=None, **kwargs):

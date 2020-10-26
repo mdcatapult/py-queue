@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=import-error
 '''
-klein_queue.rabbitmq.async.connect
+klein_queue.rabbitmq.connect
 '''
 import abc
 import json
@@ -10,7 +10,7 @@ import logging
 import pika
 import pika.exceptions
 
-from ..util import get_url_parameters
+from .util import get_url_parameters
 
 LOGGER = logging.getLogger(__name__)
 

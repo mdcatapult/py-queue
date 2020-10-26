@@ -1,57 +1,132 @@
 # -*- coding: utf-8 -*-
-'''
-klein_queue_rabbitmq.consumer
-'''
-import time
+import json
+import logging
+import functools
+import threading
+import queue
+from .connect import Connection
+from ..errors import KleinQueueError
 
-from .asynchronous.consumer import Consumer
+LOGGER = logging.getLogger(__name__)
 
 
-def nack(msg):
+class MessageWorker(threading.Thread):
     '''
-    Convenience currid function to Negative Acknowledge message
-    '''
-
-    def handle(consumer, channel, envelope, properties):
-        # pylint: disable=unused-argument
-        print(time.time(), "NACK: ", envelope.delivery_tag, msg)
-        channel.basic_nack(envelope.delivery_tag)
-
-    return handle
-
-
-def ack(msg):
-    '''
-    Convenience curried function to Acknowledge message
+    Message worker class
     '''
 
-    def handle(consumer, channel, envelope, properties):
-        # pylint: disable=unused-argument
-        print(time.time(), "ACK: ", envelope.delivery_tag, msg)
-        channel.basic_ack(envelope.delivery_tag)
+    def __init__(self, consumer):
+        self._consumer = consumer
+        self._closing = False
+        super().__init__()
 
-    return handle
+    def run(self):
+        '''
+        Loop and get messages from the message queue when they're available
+        Pass message to consumers handler function
+        If result returned from handler check to see if it is
+        callable and execute otherwise acknowledge if not already done
+        '''
+
+        while not self._closing:
+            try:
+                # get a message from the queue
+                (channel, basic_deliver, properties, body, auto_ack) = self._consumer._message_queue.get(True, 1)
+
+                result = None
+
+                try:
+                    result = self._consumer._handler_fn(json.loads(
+                        body), basic_deliver=basic_deliver, properties=properties)
+
+                except (KleinQueueError, json.decoder.JSONDecodeError, json.JSONDecodeError, UnicodeDecodeError):
+                    result = False
+
+                if result is not None and callable(result):
+                    result(self, channel, basic_deliver, properties)
+                elif result is not False and not auto_ack:
+                    LOGGER.info("Acknowledge on completion the message # %s", basic_deliver.delivery_tag)
+                    ack_cb = functools.partial(self._consumer.acknowledge_message, basic_deliver.delivery_tag)
+                    self._consumer.threadsafe_call(ack_cb)
+                elif result is False and not auto_ack:
+                    nack_cb = functools.partial(self._consumer.negative_acknowledge_message, basic_deliver.delivery_tag, False, False)
+                    self._consumer.threadsafe_call(nack_cb)
+
+            except queue.Empty:
+                continue
 
 
-def nackError(err):
+    def stop(self):
+        self._closing = True
+
+
+class Consumer(Connection):
     '''
-    Convenience curried function to Negative Acknowledge message with error
+    Consumer class
     '''
 
-    def handle(consumer, channel, basic_deliver, properties):
-        # pylint: disable=unused-argument
-        print(time.time(), "ERROR: ", str(err))
-        channel.basic_nack(basic_deliver.delivery_tag)
+    def __init__(self, config, key, handler_fn=None, workers=1):
+        self._queue = config.get(key)
+        self._config = config
+        self._handler_fn = handler_fn
+        self._handler_thread = None
+        self._consumer_tag = None
+        self._message_queue = queue.Queue()
+        self._workers = []
 
-    return handle
+        LOGGER.info('Starting %d MessageWorker threads', workers)
+        # spawn a number of worker threads (defaults to 1)
+        for _ in range(workers):
+            worker = MessageWorker(self)
+            worker.start()
+            self._workers.append(worker)
 
+        super().__init__(config, key)
 
-def consume(config, key, callback):
-    '''
-    use auto detected config from klein_config to instantiate consumer
-    '''
-    c = Consumer(config, key, callback)
-    try:
-        c.run()
-    except KeyboardInterrupt:
-        c.stop()
+    def set_handler(self, handler_fn):
+        self._handler_fn = handler_fn
+
+    def start_activity(self):
+        LOGGER.debug('Issuing consumer related RPC commands')
+        self.add_on_cancel_callback()
+        self._consumer_tag = self._channel.basic_consume(
+            on_message_callback=self.on_message, queue=self._queue["queue"])
+
+    def negative_acknowledge_message(self, delivery_tag, multiple, requeue):
+        '''
+        Sends a negative acknowledgement (NACK)
+        '''
+        LOGGER.debug("Sending negative acknowledgement on message # %s, requeue: %s", delivery_tag, requeue)
+        self._channel.basic_nack(delivery_tag, multiple, requeue)
+
+    def on_message(self, channel, basic_deliver, properties, body):
+        '''
+        Handles an incoming message, adds it to the message queue to be processed by the worker threads
+        channel: pika.Channel 
+        basic_deliver: pika.spec.Basic.Deliver
+        properties: pika.spec.BasicProperties 
+        body: bytes
+        '''
+
+        LOGGER.debug('Received message # %s from %s: %s',
+                     basic_deliver.delivery_tag, properties.app_id, body)
+
+        auto_ack = self._queue.get("auto_acknowledge", False)
+
+        # decode
+        body = body.decode('utf-8')
+
+        if auto_ack:
+            LOGGER.info("Auto-acknowledge message # %s", basic_deliver.delivery_tag)
+            self.acknowledge_message(basic_deliver.delivery_tag)
+
+        self._message_queue.put((channel, basic_deliver, properties, body, auto_ack))
+    
+    def stop_activity(self):
+        if self._channel:
+            LOGGER.debug('Sending a Basic.Cancel RPC command to RabbitMQ')
+            self._channel.basic_cancel(self._consumer_tag, self.on_cancelok)
+
+        # stop worker threads
+        for worker in self._workers:
+            worker.stop()
