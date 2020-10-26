@@ -3,8 +3,6 @@ from random import randint
 import time
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
-
 
 class CustomThrowable(Exception):
     pass
