@@ -1,7 +1,6 @@
 import threading
 from random import randint
 import time
-import logging
 
 
 class CustomThrowable(Exception):
