@@ -10,12 +10,12 @@ class CustomThrowable(Exception):
 class TestConsumer:
 
     def test_consumption(self):
-        self._event = threading.Event()
+        event = threading.Event()
 
         def handle_handle(cons):
             def handler_fn(msg, **kwargs):
                 assert msg == {'msg': 'test_message'}
-                self._event.set()
+                event.set()
                 cons.stop()
 
             return handler_fn
@@ -52,18 +52,18 @@ class TestConsumer:
         publisher.publish_message({'msg': 'test_message'})
 
         # timeout = 10 seconds on waiting for message to arrive
-        message_received_in_time = self._event.wait(10)
+        message_received_in_time = event.wait(10)
         assert message_received_in_time
 
         consumer.stop()
 
     def test_worker_concurrency(self):
         workers = randint(2, 5)
-        self._events = []
+        events = []
 
         def handler_fn(msg, **kwargs):
             event_id = msg['event']
-            self._events[event_id].set()
+            events[event_id].set()
             time.sleep(10) # sleep to block this worker
 
         from klein_config.config import EnvironmentAwareConfig
@@ -100,11 +100,11 @@ class TestConsumer:
 
         for i in range(workers):
             # send one message for each worker
-            self._events.append(threading.Event())
+            events.append(threading.Event())
             publisher.publish_message({'event': i})
 
         for i in range(workers):
-            message_received_in_time = self._events[i].wait(5)
+            message_received_in_time = events[i].wait(5)
             assert message_received_in_time
 
         consumer.stop()
