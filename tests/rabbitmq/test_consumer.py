@@ -43,7 +43,7 @@ class TestConsumer:
         consumer = Consumer(config, "consumer")
         consumer.set_handler(handle_handle(consumer))
 
-        c = threading.Thread(target=consumer.run)
+        c = threading.Thread(target=consumer._run)
         c.start()
 
         from src.klein_queue.rabbitmq.publisher import Publisher
@@ -65,7 +65,7 @@ class TestConsumer:
         def handler_fn(msg, **kwargs):
             event_id = msg['event']
             events[event_id].set()
-            time.sleep(10) # sleep to block this worker
+            time.sleep(10)  # sleep to block this worker
 
         from klein_config.config import EnvironmentAwareConfig
         config = EnvironmentAwareConfig({
@@ -80,6 +80,7 @@ class TestConsumer:
                 "auto_acknowledge": True,
                 "prefetch": workers,
                 "create_on_connect": True,
+                "workers": workers,
             },
             "publisher": {
                 "queue": "pytest.concurrency"
@@ -87,12 +88,12 @@ class TestConsumer:
         })
 
         from src.klein_queue.rabbitmq.consumer import Consumer
-        consumer = Consumer(config, "consumer", handler_fn, workers)
+        consumer = Consumer(config, "consumer", handler_fn)
 
         # check number of threads spawned
         assert len(consumer._workers) == workers
 
-        c = threading.Thread(target=consumer.run)
+        c = threading.Thread(target=consumer._run)
         c.start()
 
         from src.klein_queue.rabbitmq.publisher import Publisher

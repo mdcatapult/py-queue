@@ -10,10 +10,12 @@ class ApiClient:
         self._cache = {}
 
     def list_queues(self, exchange, flush=False):
-        """
-        utility to retrieve queues attached to exchange
+        """Utility to retrieve queues attached to exchange
         configured user for connection should have
-        management permissions
+        management permissions.
+
+        `exchange`: `str` the exchange to query.
+        `flush`: `bool` whether or not to flush the results cache.
         """
 
         if flush:

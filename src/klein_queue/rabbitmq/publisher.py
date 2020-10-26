@@ -3,7 +3,7 @@ import json
 import logging
 from threading import Thread
 from collections import deque
-from .connect import Connection
+from .connect import _Connection
 
 LOGGER = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class Publisher(Thread):
         '''
         Start the publisher & run it's IO loop within the thread
         '''
-        self._publisher.run()
+        self._publisher._run()
 
     def add(self, message, properties=None):
         '''
@@ -42,7 +42,7 @@ class Publisher(Thread):
         self._publisher.threadsafe_call(self._publisher.stop)
 
 
-class _PublisherWorker(Connection):
+class _PublisherWorker(_Connection):
 
     def __init__(self, config, key):
         self._publish_interval = config["publishInterval"] if "publishInterval" in config else 1
@@ -54,12 +54,12 @@ class _PublisherWorker(Connection):
         self._stopping = False
         super().__init__(config, key)
 
-    def start_activity(self):
+    def _start_activity(self):
         LOGGER.debug('Issuing consumer related RPC commands')
         self.enable_delivery_confirmations()
         self.schedule_next_message()
 
-    def stop_activity(self):
+    def _stop_activity(self):
         self._stopping = True
         self.close_channel()
         self.close_connection()
