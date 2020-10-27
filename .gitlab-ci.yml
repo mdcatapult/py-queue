@@ -88,3 +88,17 @@ release:
   except:
     variables:
       - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
+
+pages: 
+  stage: publish
+  tags:
+    - wopr
+  before_script:
+    - pip install pdoc3
+  script:
+    - pdoc --html src/klein_queue -o public/
+  artifacts:
+    paths:
+    - public
+  #only:
+  #  - master
