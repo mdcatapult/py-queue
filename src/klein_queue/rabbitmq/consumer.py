@@ -31,20 +31,24 @@ class _MessageWorker(threading.Thread):
         while not self._closing:
             try:
                 # get a message from the queue
-                (channel, basic_deliver, properties, body, auto_ack) = self._consumer._message_queue.get(True, 1)
+                (basic_deliver, properties, body, auto_ack) = self._consumer._message_queue.get(True, 1)
 
                 try:
                     self._consumer.handler_fn(json.loads(
                         body), basic_deliver=basic_deliver, properties=properties)
-                    LOGGER.info("Acknowledge on completion the message # %s", basic_deliver.delivery_tag)
-                    ack_cb = functools.partial(self._consumer.acknowledge_message, basic_deliver.delivery_tag)
-                    self._consumer.threadsafe_call(ack_cb)
+                    
+                    if not auto_ack:
+                        LOGGER.info("Acknowledge on completion the message # %s", basic_deliver.delivery_tag)
+                        ack_cb = functools.partial(self._consumer.acknowledge_message, basic_deliver.delivery_tag)
+                        self._consumer.threadsafe_call(ack_cb)
                 except (KleinQueueError, json.decoder.JSONDecodeError, json.JSONDecodeError, UnicodeDecodeError) as e:
-                    requeue = False
-                    if isinstance(e, KleinQueueError):
-                        requeue = e.requeue
-                    nack_cb = functools.partial(self._consumer._negative_acknowledge_message, basic_deliver.delivery_tag, False, requeue)
-                    self._consumer.threadsafe_call(nack_cb)
+                    if not auto_ack:
+                        requeue = False
+                        if isinstance(e, KleinQueueError):
+                            requeue = e.requeue
+
+                        nack_cb = functools.partial(self._consumer._negative_acknowledge_message, basic_deliver.delivery_tag, False, requeue)
+                        self._consumer.threadsafe_call(nack_cb)
 
             except queue.Empty:
                 continue
@@ -136,11 +140,11 @@ class _ConsumerConnection(_Connection):
         """Creates a connection to mongo, starts receiving messages, and starts processing messages with workers."""
         super().run()
 
-    def run(self):
+    def run(self):  # pylint: disable=useless-super-delegation
         """Creates a connection to mongo, starts receiving messages, and starts processing messages with workers."""
         super().run()
 
-    def stop(self):
+    def stop(self):  # pylint: disable=useless-super-delegation
         """Cleanly closes all worker threads, stops receiving messages, and closes the rabbitmq channel and
         connection."""
         super().stop()
@@ -158,7 +162,7 @@ class _ConsumerConnection(_Connection):
         LOGGER.debug("Sending negative acknowledgement on message # %s, requeue: %s", delivery_tag, requeue)
         self._channel.basic_nack(delivery_tag, multiple, requeue)
 
-    def _on_message(self, channel, basic_deliver, properties, body):
+    def _on_message(self, channel, basic_deliver, properties, body): # pylint: disable=unused-argument
         '''
         Handles an incoming message, adds it to the message queue to be processed by the worker threads
         channel: pika.Channel 
@@ -179,7 +183,7 @@ class _ConsumerConnection(_Connection):
             LOGGER.info("Auto-acknowledge message # %s", basic_deliver.delivery_tag)
             self.acknowledge_message(basic_deliver.delivery_tag)
 
-        self._message_queue.put((channel, basic_deliver, properties, body, auto_ack))
+        self._message_queue.put((basic_deliver, properties, body, auto_ack))
     
     def _stop_activity(self):
         if self._channel:
@@ -247,12 +251,13 @@ class Consumer(threading.Thread):
         """
 
         self._consumer = _ConsumerConnection(config, key, handler_fn)
+        super().__init__()
 
     def set_handler(self, handler_fn):
         """Set a new handler function on the Consumer to be called by the worker threads on receipt of a new message."""
         self._consumer.set_handler(handler_fn)
 
-    def start(self):
+    def start(self): # pylint: disable=useless-super-delegation
         """Creates a connection to rabbit ***in a new thread***, starts receiving messages, and starts processing messages with workers."""
         super().start()
 

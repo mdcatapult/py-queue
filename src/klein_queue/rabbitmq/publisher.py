@@ -83,7 +83,7 @@ class Publisher(Thread):
         """
         self._publisher.threadsafe_call(self._publisher.stop)
 
-    def start(self):
+    def start(self): # pylint: disable=useless-super-delegation
         """
          Start the publisher & run it's IO loop ***in a seperate thread***.
         """
