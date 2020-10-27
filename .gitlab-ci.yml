@@ -93,9 +93,8 @@ pages:
   stage: publish
   tags:
     - wopr
-  before_script:
-    - pip install pdoc3
   script:
+    - pip install pdoc3
     - pdoc --html src/klein_queue -o public/
   artifacts:
     paths:
