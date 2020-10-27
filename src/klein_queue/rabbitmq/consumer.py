@@ -58,64 +58,13 @@ class _MessageWorker(threading.Thread):
 
 
 class _ConsumerConnection(_Connection):
-    """Consumer class listens on a message queue.
+    """ConsumerConnection class listens on a message queue.
 
     When a message is received the handler function is called by a message worker.
     You can specify the number of workers (threads).
-
     """
 
     def __init__(self, config, key, handler_fn=None):
-        """
-        `config`: The `klein_config.config.EnvironmentAwareConfig` containing connection details to rabbit.
-
-        `key`: The `str` key in the config with specific consumer config, these are:
-        ```yaml
-        key:                            # i.e. consumer
-            queue: 'queue name'         # The name of the rabbitmq queue.
-            auto_acknowledge: false     # Whether to auto acknowledge messages as they are read (recommended false).
-            prefetch: 10                # The number of unacknowledged messages to read from the queue at once (recommended to
-                                    # be equal to the number of workers).
-            create_on_connect: true     # Whether to create a queue on connection.
-            workers: 10                 # The number of workers (threads) that handle messages. Defaults to 1.
-        ```
-
-        ## Example
-        **main.py**
-        ```python
-        from klein_config.config import EnvironmentAwareConfig
-        from klein_queue.rabbitmq.consumer import Consumer
-
-        config = EnvironmentAwareConfig()       # Read from file specified with `--config`
-        def handler_fn(message, **kwargs):      # handler_fn to be called in worker threads.
-            print(message)
-        consumer = Consumer(config, "consumer", handler_fn)
-
-        if __name__ == "__main__":
-            consumer.start()
-        ```
-        **config.yaml**
-        ```python
-        rabbitmq:
-            host: [localhost]
-            port: 5672
-            username: guest
-            password: guest
-            heartbeat: 2
-        consumer:
-            name: test.consumer
-            queue: test
-            auto_acknowledge: false
-            prefetch: 2
-            create_on_connect: true
-            error: error
-            workers: 2
-        ```
-        **terminal**
-        ```bash
-        $ python main.py --config config.yaml
-        ```
-        """
         self._queue = config.get(key)
         self._config = config
         self.handler_fn = handler_fn
@@ -261,12 +210,12 @@ class Consumer(threading.Thread):
 
     def start(self):  # pylint: disable=useless-super-delegation
         """Creates a connection to rabbit ***in a new thread***, starts receiving messages, and starts processing
-        messages with workers."""
+        messages with workers. **RECOMMENDED**."""
         super().start()
 
     def run(self):
         """Creates a connection to rabbit ***in the current thread***, starts receiving messages, and starts processing
-        messages with workers. This will block the current thread."""
+        messages with workers. This will block the current thread. **NOT RECOMMENDED**."""
         self._consumer.run()
 
     def stop(self):
