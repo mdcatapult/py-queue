@@ -210,12 +210,12 @@ class Consumer(threading.Thread):
 
     def start(self):  # pylint: disable=useless-super-delegation
         """Creates a connection to rabbit ***in a new thread***, starts receiving messages, and starts processing
-        messages with workers. **RECOMMENDED**."""
+        messages with workers."""
         super().start()
 
     def run(self):
         """Creates a connection to rabbit ***in the current thread***, starts receiving messages, and starts processing
-        messages with workers. This will block the current thread. **NOT RECOMMENDED**."""
+        messages with workers. This will block the current thread."""
         self._consumer.run()
 
     def stop(self):
