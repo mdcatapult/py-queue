@@ -10,7 +10,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def requeue(publisher, config, data, on_limit_reached=None, **kwargs):
-    """Requeue a message with a pulisher.
+    """Requeue a message with a publisher.
 
     Convenience function handles requeue logic before publishing the
     given data with the given publisher.

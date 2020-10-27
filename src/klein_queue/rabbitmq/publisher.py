@@ -29,14 +29,14 @@ class Publisher(Thread):
         **main.py**
         ```python
         from klein_config.config import EnvironmentAwareConfig
-        from src.klein_queue.rabbitmq.publisher import Publisher
+        from klein_queue.rabbitmq.publisher import Publisher
 
         config = EnvironmentAwareConfig()       # Read from file specified with `--config`
 
         publisher = Publisher(config, "publisher")
-        publisher.start() # spawns the publisher thread
-
-        publisher.add({'id': 'abc123'}) # sends a message
+        if __name__ == "__main__":
+            publisher.start()                   # spawns the publisher thread
+            publisher.add({'id': 'abc123'})     # sends a message
         
         ```
         **config.yaml**
@@ -61,29 +61,30 @@ class Publisher(Thread):
 
     def run(self):
         """
-        Start the publisher & run it's IO loop ***within the current thread***. This will block the current thread and is *not recommended*
+        Start the publisher & run it's IO loop ***within the current thread***. This will block the current thread and
+        is *not recommended*.
         """
         self._publisher.run()
 
     def add(self, message, properties=None):
         """
-        Adds a `message` (`dict`) to the internal queue to be published with the set `properties`
+        Adds a `message` (`dict`) to the internal queue to be published with the set `properties`.
         """
         self._publisher.publish(message, properties)
 
     def publish(self, message, properties=None):
         """
-        Adds a `message` to the internal queue - alias of `src.klein_queue.rabbitmq.publisher.Publisher.add`
+        Adds a `message` to the internal queue - alias of `src.klein_queue.rabbitmq.publisher.Publisher.add`.
         """
         self.add(message, properties)
 
     def stop(self):
         """
-        Stops the publisher and closes the connection to rabbit
+        Stops the publisher and closes the connection to rabbit.
         """
         self._publisher.threadsafe_call(self._publisher.stop)
 
-    def start(self): # pylint: disable=useless-super-delegation
+    def start(self):  # pylint: disable=useless-super-delegation
         """
          Start the publisher & run it's IO loop ***in a seperate thread***.
         """

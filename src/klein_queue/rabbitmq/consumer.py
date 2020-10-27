@@ -84,13 +84,15 @@ class _ConsumerConnection(_Connection):
         **main.py**
         ```python
         from klein_config.config import EnvironmentAwareConfig
-        from src.klein_queue.rabbitmq.consumer import Consumer
+        from klein_queue.rabbitmq.consumer import Consumer
 
         config = EnvironmentAwareConfig()       # Read from file specified with `--config`
-        def handle_fn(message, **kwargs):       # handler_fn to be called in worker threads.
+        def handler_fn(message, **kwargs):      # handler_fn to be called in worker threads.
             print(message)
         consumer = Consumer(config, "consumer", handler_fn)
-        consumer.run()
+
+        if __name__ == "__main__":
+            consumer.start()
         ```
         **config.yaml**
         ```python
@@ -218,7 +220,7 @@ class Consumer(threading.Thread):
         **main.py**
         ```python
         from klein_config.config import EnvironmentAwareConfig
-        from src.klein_queue.rabbitmq.consumer import Consumer
+        from klein_queue.rabbitmq.consumer import Consumer
 
         config = EnvironmentAwareConfig()       # Read from file specified with `--config`
         def handle_fn(message, **kwargs):       # handler_fn to be called in worker threads.
@@ -257,12 +259,14 @@ class Consumer(threading.Thread):
         """Set a new handler function on the Consumer to be called by the worker threads on receipt of a new message."""
         self._consumer.set_handler(handler_fn)
 
-    def start(self): # pylint: disable=useless-super-delegation
-        """Creates a connection to rabbit ***in a new thread***, starts receiving messages, and starts processing messages with workers."""
+    def start(self):  # pylint: disable=useless-super-delegation
+        """Creates a connection to rabbit ***in a new thread***, starts receiving messages, and starts processing
+        messages with workers."""
         super().start()
 
     def run(self):
-        """Creates a connection to rabbit ***in the current thread***, starts receiving messages, and starts processing messages with workers. This will block the current thread."""
+        """Creates a connection to rabbit ***in the current thread***, starts receiving messages, and starts processing
+        messages with workers. This will block the current thread."""
         self._consumer.run()
 
     def stop(self):
