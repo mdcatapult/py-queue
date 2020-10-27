@@ -2,6 +2,16 @@
 
 Module to abstract queues. Currently only implements RabbitMQ, roadmap to include alternatives such as Kafka.
 
+## Documentation
+
+API docs can be found at https://informatics.pages.mdcatapult.io/klein/py-queue/klein_queue.
+
+To view API docs for a particular version can be generated with `pdoc` with:
+```bash
+pip install pdoc3
+pdoc --http :8080 src
+```
+
 ## Environment Variables
 
 
