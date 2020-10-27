@@ -4,7 +4,7 @@ Module to abstract queues. Currently only implements RabbitMQ, roadmap to includ
 
 ## Documentation
 
-API docs can be found at https://informatics.pages.mdcatapult.io/klein/py-queue/klein_queue.
+API docs can be found at https://informatics.pages.mdcatapult.io/klein/py-queue/src.
 
 To view API docs for a particular version can be generated with `pdoc` with:
 ```bash

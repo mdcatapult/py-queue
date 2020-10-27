@@ -20,6 +20,7 @@ stages:
   - test
   - publish
   - release
+  - docs
 
 default:
   image: registry.mdcatapult.io/informatics/docker-images/ci:python-v1.1.4
@@ -88,3 +89,16 @@ release:
   except:
     variables:
       - $CI_COMMIT_MESSAGE =~ /^Setting version to.*/
+
+pages:
+  stage: docs
+  tags:
+    - wopr
+  script:
+    - pip install pdoc3
+    - pdoc --html src -o public/
+  artifacts:
+    paths:
+    - public
+  only:
+    - master
