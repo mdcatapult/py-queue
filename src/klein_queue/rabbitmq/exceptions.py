@@ -43,7 +43,7 @@ def new_retry_exception_handler(upstream, max_retries=3, on_limit_reached=None):
 
 
 def new_error_publishing_exception_handler(consumer_name, upstream, errors, max_retries=3):
-    def on_limit_reached(exception, body=None, basic_deliver=None):
+    def on_limit_reached(exception, body=None, basic_deliver=None, **kwargs):
         LOGGER.info("Nacking and publishing exception info for message # %s, requeue limit reached", basic_deliver.delivery_tag)
 
         headers = {

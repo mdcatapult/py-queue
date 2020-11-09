@@ -1,5 +1,6 @@
 import threading
 from random import randint
+import json
 import time
 from src.klein_queue.errors import KleinQueueError
 
@@ -35,7 +36,7 @@ class TestConsumer:
                 "queue": "pytest.consume"
             }
         })
-      
+
         from src.klein_queue.rabbitmq.consumer import Consumer
         consumer = Consumer(config, "consumer")
         consumer.set_handler(handle_handle(consumer))
@@ -110,6 +111,8 @@ class TestConsumer:
         publisher.stop()
 
     def test_error_publishing_exception_handler(self):
+        test_message = {"id": "d5d581bb-8b42-4d1e-bbf9-3fee91ab5920"}
+
         def handler_fn(msg, **kwargs):
             raise KleinQueueError("forced error")
 
@@ -126,16 +129,21 @@ class TestConsumer:
                 "password": "doclib",
             },
             "consumer": {
-                "queue": "pytest.concurrency",
+                "queue": "pytest.exceptions",
+                "auto_acknowledge": False,
+                "prefetch": 1,
+                "create_on_connect": True,
+                "workers": 1,
             },
             "publisher": {
-                "queue": "pytest.concurrency"
+                "queue": "pytest.exceptions"
             },
             "error_publisher": {
                 "queue": "errors"
             },
             "error_consumer": {
-                "queue": "errors"
+                "queue": "errors",
+                "auto_acknowledge": True
             }
         })
 
@@ -156,14 +164,14 @@ class TestConsumer:
         error_consumer = Consumer(config, "error_consumer", error_handler_fn)
         error_consumer.start()
 
-        publisher = Publisher(config, "publisher")
-        publisher.start()
-        publisher.publish("message")
+        test_publisher = Publisher(config, "publisher")
+        test_publisher.start()
+        test_publisher.publish(test_message)
 
         while waiting:
             pass
 
-        publisher.stop()
+        test_publisher.stop()
         upstream_publisher.stop()
         error_publisher.stop()
         consumer.stop()
