@@ -21,7 +21,9 @@ def new_default_exception_handler():
 def new_retry_exception_handler(upstream, max_retries=3, on_limit_reached=None):
     def handler(exception, nack, body=None, properties=None, basic_deliver=None):
         if properties is None:
-            properties = pika.BasicProperties()
+            properties = pika.BasicProperties(headers=dict())
+        if properties.headers is None:
+            properties.headers = dict()
         try:
             num_retries = properties.headers['x-retry']
         except KeyError:
