@@ -1,10 +1,7 @@
 import threading
 from random import randint
 import time
-
-
-class CustomThrowable(Exception):
-    pass
+from src.klein_queue.errors import KleinQueueError
 
 
 class TestConsumer:
@@ -111,3 +108,63 @@ class TestConsumer:
 
         consumer.stop()
         publisher.stop()
+
+    def test_error_publishing_exception_handler(self):
+        def handler_fn(msg, **kwargs):
+            raise KleinQueueError("forced error")
+
+        def error_handler_fn(msg, properties=None, **kwargs):
+            nonlocal waiting
+            waiting = False
+
+        from klein_config.config import EnvironmentAwareConfig
+        config = EnvironmentAwareConfig({
+            "rabbitmq": {
+                "host": ["localhost"],
+                "port": 5672,
+                "username": "doclib",
+                "password": "doclib",
+            },
+            "consumer": {
+                "queue": "pytest.concurrency",
+            },
+            "publisher": {
+                "queue": "pytest.concurrency"
+            },
+            "error_publisher": {
+                "queue": "errors"
+            },
+            "error_consumer": {
+                "queue": "errors"
+            }
+        })
+
+        from src.klein_queue.rabbitmq.publisher import Publisher
+        error_publisher = Publisher(config, "error_publisher")
+        error_publisher.start()
+        upstream_publisher = Publisher(config, "consumer")
+        upstream_publisher.start()
+
+        from src.klein_queue.rabbitmq.exceptions import new_error_publishing_exception_handler
+        exception_handler = new_error_publishing_exception_handler("consumer", upstream_publisher, error_publisher)
+
+        from src.klein_queue.rabbitmq.consumer import Consumer
+        consumer = Consumer(config, "consumer", handler_fn, exception_handler=exception_handler)
+        consumer.start()
+
+        waiting = True
+        error_consumer = Consumer(config, "error_consumer", error_handler_fn)
+        error_consumer.start()
+
+        publisher = Publisher(config, "publisher")
+        publisher.start()
+        publisher.publish("message")
+
+        while waiting:
+            pass
+
+        publisher.stop()
+        upstream_publisher.stop()
+        error_publisher.stop()
+        consumer.stop()
+        error_consumer.stop()
