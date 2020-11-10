@@ -1,15 +1,15 @@
 import datetime
 import json
 import logging
-import pika
 from traceback import format_tb
+import pika
 from ..errors import KleinQueueError
 
 LOGGER = logging.getLogger(__name__)
 
 
 def new_default_exception_handler():
-    def handler(exception, nack, basic_deliver=None, **kwargs):
+    def handler(exception, nack, basic_deliver=None, **kwargs):  # pylint: disable=unused-argument
         LOGGER.info("Exception occurred during processing of message # %s", basic_deliver.delivery_tag)
         requeue = False
         if isinstance(exception, KleinQueueError):
@@ -43,7 +43,7 @@ def new_retry_exception_handler(upstream, max_retries=3, on_limit_reached=None):
 
 
 def new_error_publishing_exception_handler(consumer_name, upstream, errors, max_retries=3):
-    def on_limit_reached(exception, body=None, basic_deliver=None, **kwargs):
+    def on_limit_reached(exception, body=None, basic_deliver=None, **kwargs):  # pylint: disable=unused-argument
         LOGGER.info("Nacking and publishing exception info for message # %s, requeue limit reached", basic_deliver.delivery_tag)
 
         headers = {
