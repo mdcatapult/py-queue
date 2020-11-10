@@ -131,6 +131,8 @@ class TestConsumer:
             "consumer": {
                 "queue": "pytest.default_exceptions",
                 "auto_acknowledge": False,
+                "workers": 3,
+                "prefetch": 3
             },
             "publisher": {
                 "queue": "pytest.default_exceptions"
@@ -174,6 +176,8 @@ class TestConsumer:
             "consumer": {
                 "queue": "pytest.exceptions",
                 "auto_acknowledge": False,
+                "workers": 3,
+                "prefetch": 3
             },
             "publisher": {
                 "queue": "pytest.exceptions"
