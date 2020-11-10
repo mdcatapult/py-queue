@@ -111,6 +111,54 @@ class TestConsumer:
         consumer.stop()
         publisher.stop()
 
+    def test_default_exception_handler(self):
+        retries = 0
+        waiting = True
+
+        def handler_fn(msg, **kwargs):
+            nonlocal waiting, retries
+            retries += 1
+            if retries >= 10:
+                waiting = False
+                raise KleinQueueError("forced error")
+            else:
+                raise KleinQueueError("forced error", requeue=True)
+
+        from klein_config.config import EnvironmentAwareConfig
+        config = EnvironmentAwareConfig({
+            "rabbitmq": {
+                "host": ["localhost"],
+                "port": 5672,
+                "username": "doclib",
+                "password": "doclib",
+            },
+            "consumer": {
+                "queue": "pytest.default_exceptions",
+                "auto_acknowledge": False,
+                "prefetch": 1,
+                "create_on_connect": True,
+                "workers": 1,
+            },
+            "publisher": {
+                "queue": "pytest.default_exceptions"
+            }
+        })
+
+        from src.klein_queue.rabbitmq.consumer import Consumer
+        consumer = Consumer(config, "consumer", handler_fn)
+        consumer.start()
+
+        from src.klein_queue.rabbitmq.publisher import Publisher
+        publisher = Publisher(config, "publisher")
+        publisher.start()
+        publisher.publish("message")
+
+        while waiting:
+            pass
+
+        consumer.stop()
+        publisher.stop()
+
     def test_error_publishing_exception_handler(self):
         test_message = {"id": "d5d581bb-8b42-4d1e-bbf9-3fee91ab5920"}
         error_message = ""

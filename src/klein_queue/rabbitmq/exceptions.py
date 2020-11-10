@@ -9,7 +9,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def new_default_exception_handler():
-    def handler(exception, nack, basic_deliver=None):
+    def handler(exception, nack, basic_deliver=None, **kwargs):
         LOGGER.info("Exception occurred during processing of message # %s", basic_deliver.delivery_tag)
         requeue = False
         if isinstance(exception, KleinQueueError):
