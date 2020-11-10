@@ -1,6 +1,7 @@
 import threading
 from random import randint
 import json
+import pika
 import time
 from src.klein_queue.errors import KleinQueueError
 
@@ -112,12 +113,16 @@ class TestConsumer:
 
     def test_error_publishing_exception_handler(self):
         test_message = {"id": "d5d581bb-8b42-4d1e-bbf9-3fee91ab5920"}
+        error_message = ""
+        error_properties = pika.BasicProperties()
 
         def handler_fn(msg, **kwargs):
             raise KleinQueueError("forced error")
 
         def error_handler_fn(msg, properties=None, **kwargs):
-            nonlocal waiting
+            nonlocal waiting, error_message, error_properties
+            error_message = msg
+            error_properties = properties
             waiting = False
 
         from klein_config.config import EnvironmentAwareConfig
@@ -170,6 +175,13 @@ class TestConsumer:
 
         while waiting:
             pass
+
+        assert test_message == error_message
+        assert error_properties.headers['x-consumer'] == "consumer"
+        assert "KleinQueueError" in error_properties.headers['x-exception']
+        assert error_properties.headers['x-message'] == "forced error"
+        assert error_properties.headers['x-queue'] == 'pytest.exceptions'
+        assert "forced error" in error_properties.headers['x-stack-trace']
 
         test_publisher.stop()
         upstream_publisher.stop()

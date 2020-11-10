@@ -31,7 +31,7 @@ def new_retry_exception_handler(upstream, max_retries=3, on_limit_reached=None):
         if num_retries < max_retries:
             LOGGER.info("Requeuing message # %s, exception occurred during processing", basic_deliver.delivery_tag)
             properties.headers['x-retry'] = num_retries + 1
-            upstream.publish(body, properties)
+            upstream.publish(json.loads(body), properties)
         else:
             if on_limit_reached is not None:
                 on_limit_reached(exception, body=body, properties=properties, basic_deliver=basic_deliver)
