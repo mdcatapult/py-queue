@@ -165,11 +165,15 @@ class Consumer(threading.Thread):
         key:                            # i.e. consumer
             queue: 'queue name'         # The name of the rabbitmq queue.
             auto_acknowledge: false     # Whether to auto acknowledge messages as they are read (recommended false).
-            prefetch: 10                # The number of unacknowledged messages to read from the queue at once (recommended to
-                                    # be equal to the number of workers).
+            prefetch: 10                # The number of unacknowledged messages to read from the queue at once
+                                        # (recommended to be equal to the number of workers).
             create_on_connect: true     # Whether to create a queue on connection.
             workers: 10                 # The number of workers (threads) that handle messages. Defaults to 1.
         ```
+        `handler_fn`: A callback function to be executed on receipt of a new message.
+
+        `exception_handler`: A callback function to be executed when an exception is caught during message handling.
+        This defaults to `src.klein_queue.exceptions.new_default_exception_handler`.
 
         ## Example
         **main.py**
