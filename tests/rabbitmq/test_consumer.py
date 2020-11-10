@@ -1,9 +1,27 @@
 import threading
 from random import randint
-import json
 import pika
 import time
 from src.klein_queue.errors import KleinQueueError
+from src.klein_queue.rabbitmq.publisher import Publisher
+from src.klein_queue.rabbitmq.consumer import Consumer
+from klein_config.config import EnvironmentAwareConfig
+
+test_config = {
+    "rabbitmq": {
+        "host": ["localhost"],
+        "port": 5672,
+        "username": "doclib",
+        "password": "doclib",
+    },
+    "consumer": {
+        "auto_acknowledge": True,
+        "prefetch": 1,
+        "workers": 1,
+        "create_on_connect": True,
+    },
+    "publisher": {}
+}
 
 
 class TestConsumer:
@@ -19,33 +37,24 @@ class TestConsumer:
 
             return handler_fn
 
-        from klein_config.config import EnvironmentAwareConfig
         config = EnvironmentAwareConfig({
-            "rabbitmq": {
-                "host": ["localhost"],
-                "port": 5672,
-                "username": "doclib",
-                "password": "doclib",
-            },
+            **test_config,
             "consumer": {
                 "queue": "pytest.consume",
                 "auto_acknowledge": True,
-                "prefetch": 1,
-                "create_on_connect": True,
+                "create_on_connect": True
             },
             "publisher": {
                 "queue": "pytest.consume"
             }
         })
 
-        from src.klein_queue.rabbitmq.consumer import Consumer
         consumer = Consumer(config, "consumer")
         consumer.set_handler(handle_handle(consumer))
 
         c = threading.Thread(target=consumer.run)
         c.start()
 
-        from src.klein_queue.rabbitmq.publisher import Publisher
         publisher = Publisher(config, "publisher")
         publisher.start()
         publisher.publish({'msg': 'test_message'})
@@ -66,19 +75,11 @@ class TestConsumer:
             events[event_id].set()
             time.sleep(10)  # sleep to block this worker
 
-        from klein_config.config import EnvironmentAwareConfig
         config = EnvironmentAwareConfig({
-            "rabbitmq": {
-                "host": ["localhost"],
-                "port": 5672,
-                "username": "doclib",
-                "password": "doclib",
-            },
+            **test_config,
             "consumer": {
                 "queue": "pytest.concurrency",
-                "auto_acknowledge": True,
                 "prefetch": workers,
-                "create_on_connect": True,
                 "workers": workers,
             },
             "publisher": {
@@ -86,7 +87,6 @@ class TestConsumer:
             }
         })
 
-        from src.klein_queue.rabbitmq.consumer import Consumer
         consumer = Consumer(config, "consumer", handler_fn)
 
         # check number of threads spawned
@@ -95,7 +95,6 @@ class TestConsumer:
         c = threading.Thread(target=consumer.run)
         c.start()
 
-        from src.klein_queue.rabbitmq.publisher import Publisher
         publisher = Publisher(config, "publisher")
         publisher.start()
 
@@ -124,31 +123,20 @@ class TestConsumer:
             else:
                 raise KleinQueueError("forced error", requeue=True)
 
-        from klein_config.config import EnvironmentAwareConfig
         config = EnvironmentAwareConfig({
-            "rabbitmq": {
-                "host": ["localhost"],
-                "port": 5672,
-                "username": "doclib",
-                "password": "doclib",
-            },
+            **test_config,
             "consumer": {
                 "queue": "pytest.default_exceptions",
                 "auto_acknowledge": False,
-                "prefetch": 1,
-                "create_on_connect": True,
-                "workers": 1,
             },
             "publisher": {
                 "queue": "pytest.default_exceptions"
             }
         })
 
-        from src.klein_queue.rabbitmq.consumer import Consumer
         consumer = Consumer(config, "consumer", handler_fn)
         consumer.start()
 
-        from src.klein_queue.rabbitmq.publisher import Publisher
         publisher = Publisher(config, "publisher")
         publisher.start()
         publisher.publish("message")
@@ -173,20 +161,11 @@ class TestConsumer:
             error_properties = properties
             waiting = False
 
-        from klein_config.config import EnvironmentAwareConfig
         config = EnvironmentAwareConfig({
-            "rabbitmq": {
-                "host": ["localhost"],
-                "port": 5672,
-                "username": "doclib",
-                "password": "doclib",
-            },
+            **test_config,
             "consumer": {
                 "queue": "pytest.exceptions",
                 "auto_acknowledge": False,
-                "prefetch": 1,
-                "create_on_connect": True,
-                "workers": 1,
             },
             "publisher": {
                 "queue": "pytest.exceptions"
@@ -200,7 +179,6 @@ class TestConsumer:
             }
         })
 
-        from src.klein_queue.rabbitmq.publisher import Publisher
         error_publisher = Publisher(config, "error_publisher")
         error_publisher.start()
         upstream_publisher = Publisher(config, "consumer")
@@ -209,7 +187,6 @@ class TestConsumer:
         from src.klein_queue.rabbitmq.exceptions import new_error_publishing_exception_handler
         exception_handler = new_error_publishing_exception_handler("consumer", upstream_publisher, error_publisher)
 
-        from src.klein_queue.rabbitmq.consumer import Consumer
         consumer = Consumer(config, "consumer", handler_fn, exception_handler=exception_handler)
         consumer.start()
 
