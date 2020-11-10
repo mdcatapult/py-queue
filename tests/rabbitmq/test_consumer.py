@@ -113,14 +113,17 @@ class TestConsumer:
     def test_default_exception_handler(self):
         retries = 0
         waiting = True
+        expected_retries = 10
 
         def handler_fn(msg, **kwargs):
             nonlocal waiting, retries
             retries += 1
-            if retries >= 10:
+            if retries >= expected_retries:
+                # Stop waiting and don't requeue
                 waiting = False
                 raise KleinQueueError("forced error")
             else:
+                # Requeue the message
                 raise KleinQueueError("forced error", requeue=True)
 
         config = EnvironmentAwareConfig({
@@ -141,7 +144,12 @@ class TestConsumer:
         publisher.start()
         publisher.publish("message")
 
+        timeout = time.time() + 60
         while waiting:
+            if time.time() > timeout:
+                # Fails this test if the expected number of retries has not been reached within the time limit.
+                assert False
+            time.sleep(1)
             pass
 
         consumer.stop()
