@@ -9,6 +9,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 def new_default_exception_handler():
+    """Returns the default exception handler.
+
+    The default exception handler will *always* negatively acknowledge the message. If the exception raised was of type
+    `src.klein_queue.errors.KleinQueueError` and it's `requeue` attribute is `True`, the message will be requeued.
+    Otherwise, the message will not be requeued.
+    """
     def handler(exception, nack, basic_deliver=None, **kwargs):  # pylint: disable=unused-argument
         LOGGER.info("Exception occurred during processing of message # %s", basic_deliver.delivery_tag)
         requeue = False
@@ -19,6 +25,20 @@ def new_default_exception_handler():
 
 
 def new_retry_exception_handler(upstream, max_retries=3, on_limit_reached=None):
+    """Returns a retry exception handler.
+
+    * `upstream`: `src.klein_queue.rabbitmq.publisher.Publisher` - The upstream publisher to publish retries with.
+    * `max_retries`: `int` - The maximum number of retries.
+    * `on_limit_reached`: A callback function to be executed when `max_retries` has been exceeded.
+
+    The retry exception handler checks the value of the `x-retry` message header (or creates one with value 0).
+    If the number of retries is less than `max_retries`, a new message is published to the `upstream` publisher
+    which contains the incremented `x-retry` header value and the original message body. If the number of retries
+    is greater than `max_retries`, the retry exception handler will call `on_limit_reached` if it has been set.
+
+    **The original message is always negatively acknowledged and is not requeued**. It is not possible to manipulate
+    headers when negatively acknowledging and requeuing in the normal way.
+    """
     def handler(exception, nack, body=None, properties=None, basic_deliver=None):
         if properties is None:
             properties = pika.BasicProperties(headers=dict())
@@ -28,7 +48,7 @@ def new_retry_exception_handler(upstream, max_retries=3, on_limit_reached=None):
             num_retries = properties.headers['x-retry']
         except KeyError:
             num_retries = 0
-        if num_retries < max_retries:
+        if num_retries <= max_retries:
             LOGGER.info("Requeuing message # %s, exception occurred during processing", basic_deliver.delivery_tag)
             properties.headers['x-retry'] = num_retries + 1
             upstream.publish(json.loads(body), properties)
@@ -43,8 +63,21 @@ def new_retry_exception_handler(upstream, max_retries=3, on_limit_reached=None):
 
 
 def new_error_publishing_exception_handler(consumer_name, upstream, errors, max_retries=3):
+    """Returns an error publishing exception handler.
+
+    * `consumer_name`: `string` - The name of the consumer. This is added to the headers of published error messages.
+    * `upstream`: `src.klein_queue.rabbitmq.publisher.Publisher` - The upstream publisher to publish retries with.
+    * `errors`: `src.klein_queue.rabbitmq.publisher.Publisher` - The errors publisher to publish errors with.
+    * `max_retries`: `int` - The maximum number of retries.
+
+    The error publishing exception handler calls `src.klein_queue.rabbitmq.exceptions.new_retry_exception_handler` and
+    passes in a callback to be executed when the retry limit is reached. The callback publishes a message with the
+    `errors` publisher containing the original message body, and with headers containing information extracted from the
+    exception.
+    """
     def on_limit_reached(exception, body=None, basic_deliver=None, **kwargs):  # pylint: disable=unused-argument
-        LOGGER.info("Nacking and publishing exception info for message # %s, requeue limit reached", basic_deliver.delivery_tag)
+        LOGGER.info("Nacking and publishing exception info for message # %s, requeue limit reached",
+                    basic_deliver.delivery_tag)
 
         headers = {
             'x-consumer': consumer_name,
