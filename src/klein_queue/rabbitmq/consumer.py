@@ -5,7 +5,7 @@ import functools
 import threading
 import queue
 from .connect import _Connection
-from .exceptions import new_default_exception_handler
+from ..errors import KleinQueueError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -18,10 +18,7 @@ class _MessageWorker(threading.Thread):
     def __init__(self, consumer, exception_handler=None):
         self._consumer = consumer
         self._closing = False
-        if exception_handler is not None:
-            self._exception_handler = exception_handler
-        else:
-            self._exception_handler = new_default_exception_handler()
+        self._exception_handler = exception_handler
         super().__init__()
 
     def run(self):
@@ -51,10 +48,20 @@ class _MessageWorker(threading.Thread):
                                                     basic_deliver.delivery_tag, False, requeue)
                         self._consumer.threadsafe_call(nack_cb)
                     if self._consumer.auto_ack:
-                        LOGGER.info("Exception occurred during processing of message # %s", basic_deliver.delivery_tag)
-                    else:
+                        LOGGER.exception("Exception occurred during processing of message # %s:"
+                                         " Already acknowledged", basic_deliver.delivery_tag, exc_info=exception)
+                    elif isinstance(exception, KleinQueueError) and exception.requeue:  # pylint: disable=no-member
+                        LOGGER.info("Exception occurred during processing of message # %s: "
+                                    "Negatively acknowledging and requeuing", basic_deliver.delivery_tag)
+                        nack(True)
+                    elif self._exception_handler is not None:
                         self._exception_handler(exception, nack, body=body, properties=properties,
                                                 basic_deliver=basic_deliver)
+                    else:
+                        LOGGER.exception("Exception occurred during processing of message # %s: "
+                                         "Negatively acknowledging and not requeuing", basic_deliver.delivery_tag,
+                                         exc_info=exception)
+                        nack(False)
 
             except queue.Empty:
                 continue
@@ -171,7 +178,15 @@ class Consumer(threading.Thread):
         `handler_fn`: A callback function to be executed on receipt of a new message.
 
         `exception_handler`: A callback function to be executed when an exception is caught during message handling.
-        This defaults to `src.klein_queue.exceptions.new_default_exception_handler`.
+        ## Exception handling
+        Exceptions raised in the handler function are handled by exactly one of the following cases. In order of
+        precedence:
+
+        1. Check if the consumer is set to auto acknowledge messages. If so, log the exception and do nothing.
+        2. Check if the raised exception is of type `src.klein_queue.errors.KleinQueueError` and it's requeue attribute
+        is set to `True`. If so, negatively acknowledge the message and requeue it (and log this behaviour).
+        3. Check if the `exception_handler` has been set. If so, call it.
+        4. Catch all. Log the exception, negatively acknowledge the message and do not requeue it.
 
         ## Example
         **main.py**
