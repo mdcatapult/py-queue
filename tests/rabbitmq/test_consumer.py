@@ -13,14 +13,7 @@ test_config = {
         "port": 5672,
         "username": "doclib",
         "password": "doclib",
-    },
-    "consumer": {
-        "auto_acknowledge": True,
-        "prefetch": 1,
-        "workers": 1,
-        "create_on_connect": True,
-    },
-    "publisher": {}
+    }
 }
 
 
@@ -73,7 +66,6 @@ class TestConsumer:
         def handler_fn(msg, **kwargs):
             event_id = msg['event']
             events[event_id].set()
-            time.sleep(10)  # sleep to block this worker
 
         config = EnvironmentAwareConfig({
             **test_config,
@@ -81,6 +73,7 @@ class TestConsumer:
                 "queue": "pytest.concurrency",
                 "prefetch": workers,
                 "workers": workers,
+                "auto_acknowledge": True
             },
             "publisher": {
                 "queue": "pytest.concurrency"
