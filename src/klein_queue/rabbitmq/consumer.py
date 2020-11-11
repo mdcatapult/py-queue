@@ -35,13 +35,13 @@ class _MessageWorker(threading.Thread):
         while not self._closing:
             try:
                 # get a message from the queue
-                (basic_deliver, properties, body, auto_ack) = self._consumer._message_queue.get(True, 1)
+                (body, properties, basic_deliver) = self._consumer._message_queue.get(True, 1)
 
                 try:
                     self._consumer.handler_fn(json.loads(
                         body), basic_deliver=basic_deliver, properties=properties)
 
-                    if not auto_ack:
+                    if not self._consumer.auto_ack:
                         LOGGER.info("Acknowledging successfully processed message # %s", basic_deliver.delivery_tag)
                         ack_cb = functools.partial(self._consumer.acknowledge_message, basic_deliver.delivery_tag)
                         self._consumer.threadsafe_call(ack_cb)
@@ -50,7 +50,7 @@ class _MessageWorker(threading.Thread):
                         nack_cb = functools.partial(self._consumer._negative_acknowledge_message,
                                                     basic_deliver.delivery_tag, False, requeue)
                         self._consumer.threadsafe_call(nack_cb)
-                    if auto_ack:
+                    if self._consumer.auto_ack:
                         LOGGER.info("Exception occurred during processing of message # %s", basic_deliver.delivery_tag)
                     else:
                         self._exception_handler(exception, nack, body=body, properties=properties,
@@ -78,6 +78,7 @@ class _ConsumerConnection(_Connection):
         self._consumer_tag = None
         self._message_queue = queue.Queue()
         self._workers = []
+        self.auto_ack = self._queue.get("auto_acknowledge", False)
 
         workers = self._queue.get("workers", 1)
         LOGGER.info('Starting %d MessageWorker threads', workers)
@@ -110,7 +111,7 @@ class _ConsumerConnection(_Connection):
         LOGGER.debug('Issuing consumer related RPC commands')
         self.add_on_cancel_callback()
         self._consumer_tag = self._channel.basic_consume(
-            on_message_callback=self._on_message, queue=self._queue["queue"])
+            on_message_callback=self._on_message, queue=self._queue["queue"], auto_ack=self.auto_ack)
 
     def _negative_acknowledge_message(self, delivery_tag, multiple, requeue):
         '''
@@ -131,16 +132,13 @@ class _ConsumerConnection(_Connection):
         LOGGER.debug('Received message # %s from %s: %s',
                      basic_deliver.delivery_tag, properties.app_id, body)
 
-        auto_ack = self._queue.get("auto_acknowledge", False)
+        if self.auto_ack:
+            LOGGER.info("Auto-acknowledged message # %s", basic_deliver.delivery_tag)
 
         # decode
         body = body.decode('utf-8')
 
-        if auto_ack:
-            LOGGER.info("Auto-acknowledge message # %s", basic_deliver.delivery_tag)
-            self.acknowledge_message(basic_deliver.delivery_tag)
-
-        self._message_queue.put((basic_deliver, properties, body, auto_ack))
+        self._message_queue.put((body, properties, basic_deliver))
 
     def _stop_activity(self):
         if self._channel:
