@@ -154,8 +154,11 @@ class TestConsumer:
         test_message = {"id": "d5d581bb-8b42-4d1e-bbf9-3fee91ab5920"}
         error_message = ""
         error_properties = pika.BasicProperties()
+        message_properties = pika.BasicProperties()
 
-        def handler_fn(msg, **kwargs):
+        def handler_fn(msg, properties=None, **kwargs):
+            nonlocal message_properties
+            message_properties = properties
             raise KleinQueueError("forced error")
 
         def error_handler_fn(msg, properties=None, **kwargs):
@@ -206,6 +209,7 @@ class TestConsumer:
         while waiting:
             pass
 
+        assert message_properties.headers['x-retry'] == 3
         assert test_message == error_message
         assert error_properties.headers['x-consumer'] == "consumer"
         assert "KleinQueueError" in error_properties.headers['x-exception']
