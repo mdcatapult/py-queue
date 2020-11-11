@@ -57,6 +57,7 @@ class Publisher(Thread):
         ```
         """
         self._publisher = _PublisherWorker(config, key)
+        self.queue = config.get("{}.queue".format(key))
         super().__init__()
 
     def run(self):
@@ -94,7 +95,6 @@ class Publisher(Thread):
 class _PublisherWorker(_Connection):
 
     def __init__(self, config, key):
-        self._publish_interval = config["publishInterval"] if "publishInterval" in config else 1
         self._messages = deque([])
         self._deliveries = []
         self._acked = 0
@@ -136,10 +136,8 @@ class _PublisherWorker(_Connection):
         if self._stopping:
             return
 
-        LOGGER.debug('Scheduling next message for %0.1f seconds',
-                     self._publish_interval)
-        self._connection.ioloop.call_later(self._publish_interval,
-                                           self.__publish_message)
+        LOGGER.debug('Scheduling next message')
+        self._connection.ioloop.add_callback_threadsafe(self.__publish_message)
 
     def __publish_message(self):
         if self._stopping:
@@ -149,6 +147,7 @@ class _PublisherWorker(_Connection):
 
         if not self._messages:
             # no messages to publish... do nothing
+            self.schedule_next_message()
             return
 
         (message, properties) = self._messages.popleft()

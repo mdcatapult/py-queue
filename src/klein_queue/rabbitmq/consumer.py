@@ -15,9 +15,10 @@ class _MessageWorker(threading.Thread):
     Message worker class
     """
 
-    def __init__(self, consumer):
+    def __init__(self, consumer, exception_handler=None):
         self._consumer = consumer
         self._closing = False
+        self._exception_handler = exception_handler
         super().__init__()
 
     def run(self):
@@ -31,24 +32,36 @@ class _MessageWorker(threading.Thread):
         while not self._closing:
             try:
                 # get a message from the queue
-                (basic_deliver, properties, body, auto_ack) = self._consumer._message_queue.get(True, 1)
+                (body, properties, basic_deliver) = self._consumer._message_queue.get(True, 1)
 
                 try:
                     self._consumer.handler_fn(json.loads(
                         body), basic_deliver=basic_deliver, properties=properties)
-                    
-                    if not auto_ack:
-                        LOGGER.info("Acknowledge on completion the message # %s", basic_deliver.delivery_tag)
+
+                    if not self._consumer.auto_ack:
+                        LOGGER.info("Acknowledging successfully processed message # %s", basic_deliver.delivery_tag)
                         ack_cb = functools.partial(self._consumer.acknowledge_message, basic_deliver.delivery_tag)
                         self._consumer.threadsafe_call(ack_cb)
-                except (KleinQueueError, json.decoder.JSONDecodeError, json.JSONDecodeError, UnicodeDecodeError) as e:
-                    if not auto_ack:
-                        requeue = False
-                        if isinstance(e, KleinQueueError):
-                            requeue = e.requeue
-
-                        nack_cb = functools.partial(self._consumer._negative_acknowledge_message, basic_deliver.delivery_tag, False, requeue)
+                except BaseException as exception:
+                    def nack(requeue):
+                        nack_cb = functools.partial(self._consumer._negative_acknowledge_message,
+                                                    basic_deliver.delivery_tag, False, requeue)
                         self._consumer.threadsafe_call(nack_cb)
+                    if self._consumer.auto_ack:
+                        LOGGER.exception("Exception occurred during processing of message # %s:"
+                                         " Already acknowledged", basic_deliver.delivery_tag, exc_info=exception)
+                    elif isinstance(exception, KleinQueueError) and exception.requeue:  # pylint: disable=no-member
+                        LOGGER.info("Exception occurred during processing of message # %s: "
+                                    "Negatively acknowledging and requeuing", basic_deliver.delivery_tag)
+                        nack(True)
+                    elif self._exception_handler is not None:
+                        self._exception_handler(exception, nack, body=body, properties=properties,
+                                                basic_deliver=basic_deliver)
+                    else:
+                        LOGGER.exception("Exception occurred during processing of message # %s: "
+                                         "Negatively acknowledging and not requeuing", basic_deliver.delivery_tag,
+                                         exc_info=exception)
+                        nack(False)
 
             except queue.Empty:
                 continue
@@ -64,7 +77,7 @@ class _ConsumerConnection(_Connection):
     You can specify the number of workers (threads).
     """
 
-    def __init__(self, config, key, handler_fn=None):
+    def __init__(self, config, key, handler_fn=None, exception_handler=None):
         self._queue = config.get(key)
         self._config = config
         self.handler_fn = handler_fn
@@ -72,12 +85,13 @@ class _ConsumerConnection(_Connection):
         self._consumer_tag = None
         self._message_queue = queue.Queue()
         self._workers = []
+        self.auto_ack = self._queue.get("auto_acknowledge", False)
 
         workers = self._queue.get("workers", 1)
         LOGGER.info('Starting %d MessageWorker threads', workers)
         # spawn a number of worker threads (defaults to 1)
         for _ in range(workers):
-            worker = _MessageWorker(self)
+            worker = _MessageWorker(self, exception_handler)
             worker.start()
             self._workers.append(worker)
 
@@ -104,7 +118,7 @@ class _ConsumerConnection(_Connection):
         LOGGER.debug('Issuing consumer related RPC commands')
         self.add_on_cancel_callback()
         self._consumer_tag = self._channel.basic_consume(
-            on_message_callback=self._on_message, queue=self._queue["queue"])
+            on_message_callback=self._on_message, queue=self._queue["queue"], auto_ack=self.auto_ack)
 
     def _negative_acknowledge_message(self, delivery_tag, multiple, requeue):
         '''
@@ -113,7 +127,7 @@ class _ConsumerConnection(_Connection):
         LOGGER.debug("Sending negative acknowledgement on message # %s, requeue: %s", delivery_tag, requeue)
         self._channel.basic_nack(delivery_tag, multiple, requeue)
 
-    def _on_message(self, channel, basic_deliver, properties, body): # pylint: disable=unused-argument
+    def _on_message(self, channel, basic_deliver, properties, body):  # pylint: disable=unused-argument
         '''
         Handles an incoming message, adds it to the message queue to be processed by the worker threads
         channel: pika.Channel 
@@ -125,17 +139,14 @@ class _ConsumerConnection(_Connection):
         LOGGER.debug('Received message # %s from %s: %s',
                      basic_deliver.delivery_tag, properties.app_id, body)
 
-        auto_ack = self._queue.get("auto_acknowledge", False)
+        if self.auto_ack:
+            LOGGER.info("Auto-acknowledged message # %s", basic_deliver.delivery_tag)
 
         # decode
         body = body.decode('utf-8')
 
-        if auto_ack:
-            LOGGER.info("Auto-acknowledge message # %s", basic_deliver.delivery_tag)
-            self.acknowledge_message(basic_deliver.delivery_tag)
+        self._message_queue.put((body, properties, basic_deliver))
 
-        self._message_queue.put((basic_deliver, properties, body, auto_ack))
-    
     def _stop_activity(self):
         if self._channel:
             LOGGER.debug('Sending a Basic.Cancel RPC command to RabbitMQ')
@@ -150,7 +161,7 @@ class Consumer(threading.Thread):
     """Multithreaded consumer
     """
 
-    def __init__(self, config, key, handler_fn=None):
+    def __init__(self, config, key, handler_fn=None, exception_handler=None):
         """
         `config`: The `klein_config.config.EnvironmentAwareConfig` containing connection details to rabbit.
 
@@ -159,11 +170,23 @@ class Consumer(threading.Thread):
         key:                            # i.e. consumer
             queue: 'queue name'         # The name of the rabbitmq queue.
             auto_acknowledge: false     # Whether to auto acknowledge messages as they are read (recommended false).
-            prefetch: 10                # The number of unacknowledged messages to read from the queue at once (recommended to
-                                    # be equal to the number of workers).
+            prefetch: 10                # The number of unacknowledged messages to read from the queue at once
+                                        # (recommended to be equal to the number of workers).
             create_on_connect: true     # Whether to create a queue on connection.
             workers: 10                 # The number of workers (threads) that handle messages. Defaults to 1.
         ```
+        `handler_fn`: A callback function to be executed on receipt of a new message.
+
+        `exception_handler`: A callback function to be executed when an exception is caught during message handling.
+        ## Exception handling
+        Exceptions raised in the handler function are handled by exactly one of the following cases. In order of
+        precedence:
+
+        1. Check if the consumer is set to auto acknowledge messages. If so, log the exception and do nothing.
+        2. Check if the raised exception is of type `src.klein_queue.errors.KleinQueueError` and it's requeue attribute
+        is set to `True`. If so, negatively acknowledge the message and requeue it (and log this behaviour).
+        3. Check if the `exception_handler` has been set. If so, call it.
+        4. Catch all. Log the exception, negatively acknowledge the message and do not requeue it.
 
         ## Example
         **main.py**
@@ -201,7 +224,7 @@ class Consumer(threading.Thread):
         ```
         """
 
-        self._consumer = _ConsumerConnection(config, key, handler_fn)
+        self._consumer = _ConsumerConnection(config, key, handler_fn, exception_handler)
         super().__init__()
 
     def set_handler(self, handler_fn):
