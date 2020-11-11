@@ -327,7 +327,7 @@ class _Connection:
         Runs a callback in the context of the IO loop
         :param cb: a callback function
         """
-        self._connection.ioloop.call_later(0, cb)
+        self._connection.ioloop.add_callback_threadsafe(cb)
 
     @abc.abstractmethod
     def _stop_activity(self):
