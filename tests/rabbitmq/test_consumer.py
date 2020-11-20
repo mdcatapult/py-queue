@@ -23,8 +23,9 @@ class TestConsumer:
         event = threading.Event()
 
         def handle_handle(cons):
-            def handler_fn(msg, **kwargs):
+            def handler_fn(msg, properties=None, **kwargs):
                 assert msg == {'msg': 'test_message'}
+                assert properties.delivery_mode == 2
                 event.set()
                 cons.stop()
 
@@ -209,13 +210,17 @@ class TestConsumer:
         while waiting:
             pass
 
+        assert message_properties.delivery_mode == 2
         assert message_properties.headers['x-retry'] == 3
         assert test_message == error_message
+        assert error_properties.delivery_mode == 2
         assert error_properties.headers['x-consumer'] == "consumer"
         assert "KleinQueueError" in error_properties.headers['x-exception']
         assert error_properties.headers['x-message'] == "forced error"
         assert error_properties.headers['x-queue'] == 'pytest.exceptions'
         assert "forced error" in error_properties.headers['x-stack-trace']
+        assert error_properties.headers["x-original-routing-key"] == "pytest.exceptions"
+        assert error_properties.headers["x-original-exchange"] == ""
 
         test_publisher.stop()
         upstream_publisher.stop()

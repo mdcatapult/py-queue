@@ -71,6 +71,7 @@ class Publisher(Thread):
     def add(self, message, properties=None, persist=True):
         """
         Adds a `message` (`dict`) to the internal queue to be published with the set `properties`.
+        If you do not wish to persist your messages, you must explicitly set `persist` to `False`.
         """
         if persist and properties is None:
             properties = pika.BasicProperties(delivery_mode=2)
