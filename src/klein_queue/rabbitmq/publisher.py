@@ -3,6 +3,7 @@ import json
 import logging
 from threading import Thread
 from collections import deque
+import pika
 from .connect import _Connection
 
 LOGGER = logging.getLogger(__name__)
@@ -67,17 +68,22 @@ class Publisher(Thread):
         """
         self._publisher.run()
 
-    def add(self, message, properties=None):
+    def add(self, message, properties=None, persist=True):
         """
         Adds a `message` (`dict`) to the internal queue to be published with the set `properties`.
+        If you do not wish to persist your messages, you must explicitly set `persist` to `False`.
         """
+        if persist and properties is None:
+            properties = pika.BasicProperties(delivery_mode=2)
+        elif persist:
+            properties.delivery_mode = 2
         self._publisher.publish(message, properties)
 
-    def publish(self, message, properties=None):
+    def publish(self, message, properties=None, persist=True):
         """
         Adds a `message` to the internal queue - alias of `src.klein_queue.rabbitmq.publisher.Publisher.add`.
         """
-        self.add(message, properties)
+        self.add(message, properties, persist)
 
     def stop(self):
         """
