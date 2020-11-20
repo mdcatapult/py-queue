@@ -199,7 +199,6 @@ class TestConsumer:
         consumer = Consumer(config, "consumer", handler_fn, exception_handler=exception_handler)
         consumer.start()
 
-        waiting = True
         error_consumer = Consumer(config, "error_consumer", error_handler_fn)
         error_consumer.start()
 
@@ -207,8 +206,15 @@ class TestConsumer:
         test_publisher.start()
         test_publisher.publish(test_message)
 
+        waiting = True
         while waiting:
             pass
+
+        test_publisher.stop()
+        upstream_publisher.stop()
+        error_publisher.stop()
+        consumer.stop()
+        error_consumer.stop()
 
         assert message_properties.delivery_mode == 2
         assert message_properties.headers['x-retry'] == 3
@@ -221,9 +227,3 @@ class TestConsumer:
         assert "forced error" in error_properties.headers['x-stack-trace']
         assert error_properties.headers["x-original-routing-key"] == "pytest.exceptions"
         assert error_properties.headers["x-original-exchange"] == ""
-
-        test_publisher.stop()
-        upstream_publisher.stop()
-        error_publisher.stop()
-        consumer.stop()
-        error_consumer.stop()
