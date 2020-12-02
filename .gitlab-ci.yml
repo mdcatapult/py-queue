@@ -23,7 +23,7 @@ stages:
   - docs
 
 default:
-  image: registry.mdcatapult.io/informatics/docker-images/ci:python-v1.1.4
+  image: registry.mdcatapult.io/informatics/docker-images/ci:python
   before_script:
     - >
       pip install -r requirements.txt --trusted-host=nexus.mdcatapult.io
