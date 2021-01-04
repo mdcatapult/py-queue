@@ -107,6 +107,8 @@ class _PublisherWorker(_Connection):
         self._nacked = 0
         self._message_number = 0
         self._stopping = False
+        self._key = key
+
         super().__init__(config, key)
 
     def _start_activity(self):
@@ -158,8 +160,9 @@ class _PublisherWorker(_Connection):
 
         (message, properties) = self._messages.popleft()
 
-        LOGGER.debug('Publishing message to queue %s', self._queue["queue"])
-        self._channel.basic_publish('', self._queue["queue"],
+        connection = self._config.get(self._key)
+        LOGGER.debug('Publishing message to queue %s', connection["queue"])
+        self._channel.basic_publish('', connection["queue"],
                                     json.dumps(message),
                                     properties)
 

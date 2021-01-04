@@ -78,16 +78,16 @@ class _ConsumerConnection(_Connection):
     """
 
     def __init__(self, config, key, handler_fn=None, exception_handler=None):
-        self._queue = config.get(key)
+        self._key = key
         self._config = config
         self.handler_fn = handler_fn
         self._handler_thread = None
         self._consumer_tag = None
         self._message_queue = queue.Queue()
         self._workers = []
-        self.auto_ack = self._queue.get("auto_acknowledge", False)
+        self.auto_ack = self._config.get(f"{key}.auto_acknowledge", False)
 
-        workers = self._queue.get("workers", 1)
+        workers = self._config.get(f"{key}.workers", 1)
         LOGGER.info('Starting %d MessageWorker threads', workers)
         # spawn a number of worker threads (defaults to 1)
         for _ in range(workers):
@@ -118,7 +118,7 @@ class _ConsumerConnection(_Connection):
         LOGGER.debug('Issuing consumer related RPC commands')
         self.add_on_cancel_callback()
         self._consumer_tag = self._channel.basic_consume(
-            on_message_callback=self._on_message, queue=self._queue["queue"], auto_ack=self.auto_ack)
+            on_message_callback=self._on_message, queue=self._config.get(f"{self._key}.queue"), auto_ack=self.auto_ack)
 
     def _negative_acknowledge_message(self, delivery_tag, multiple, requeue):
         '''
