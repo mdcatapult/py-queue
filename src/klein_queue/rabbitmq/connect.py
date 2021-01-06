@@ -52,7 +52,7 @@ class _Connection:
     def __init__(self, config, key):
         self._connection_params = self.__get_url_parameters(config)
         self._config = config
-        self._queue = config.get(key)
+        self._key = key
         self._connection = None
         self._channel = None
         self._closing = False
@@ -142,9 +142,10 @@ class _Connection:
         LOGGER.debug('Channel opened')
         self._channel = channel
 
+        connection = self._config.get(self._key)
         prefetch = 1
-        if "prefetch" in self._queue:
-            prefetch = self._queue["prefetch"]
+        if "prefetch" in connection:
+            prefetch = connection["prefetch"]
         self._channel.basic_qos(prefetch_count=prefetch)
 
         self.add_on_channel_close_callback()
@@ -173,9 +174,10 @@ class _Connection:
         and bind callback for successful declaration
         if no exchanges configured then setup queues
         """
-        if "exchanges" in self._queue:
-            LOGGER.debug('Declaring exchanges %s', self._queue["exchanges"])
-            for ex in self._queue['exchanges']:
+        connection = self._config.get(self._key)
+        if "exchanges" in connection:
+            LOGGER.debug('Declaring exchanges %s', connection["exchanges"])
+            for ex in connection['exchanges']:
                 ex_name = ex
                 ex_type = 'fanout'
                 if isinstance(ex, dict):
@@ -204,12 +206,12 @@ class _Connection:
         """
         declare queue with rabbitmq, ensuring durability
         """
-
+        connection = self._config.get(self._key)
         create_queue = self._config.get("rabbitmq.create_queue_on_connect", True) and not (
-                "create_on_connect" in self._queue and not self._queue["create_on_connect"])
+                "create_on_connect" in connection and not connection["create_on_connect"])
         if create_queue:
-            LOGGER.debug('Declaring queue %s', self._queue["queue"])
-            self._channel.queue_declare(queue=self._queue["queue"],
+            LOGGER.debug('Declaring queue %s', connection["queue"])
+            self._channel.queue_declare(queue=connection["queue"],
                                         callback=self.on_queue_declareok,
                                         durable=True,
                                         exclusive=False,
@@ -223,9 +225,10 @@ class _Connection:
         """
         if exchanges configured then bind queue to exchange
         """
-        if "exchanges" in self._queue:
-            for ex in self._queue['exchanges']:
-                LOGGER.debug('Binding %s to %s', ex, self._queue["queue"])
+        connection = self._config.get(self._key)
+        if "exchanges" in connection:
+            for ex in connection['exchanges']:
+                LOGGER.debug('Binding %s to %s', ex, connection["queue"])
                 ex_name = ex
                 if isinstance(ex, dict):
                     if "name" not in ex:
@@ -235,7 +238,7 @@ class _Connection:
                     ex_name = ex["name"]
 
                 self._channel.queue_bind(
-                    self._queue["queue"], ex_name, callback=self.on_bindok)
+                    connection["queue"], ex_name, callback=self.on_bindok)
         else:
             self._start_activity()
 
