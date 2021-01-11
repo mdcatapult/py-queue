@@ -87,7 +87,7 @@ class _ConsumerConnection(_Connection):
         self._workers = []
         self.auto_ack = self._config.get(f"{key}.auto_acknowledge", False)
 
-        workers = self._config.get(f"{key}.workers", 1)
+        workers = self._config.get(f"{key}.concurrency", 1)
         LOGGER.info('Starting %d MessageWorker threads', workers)
         # spawn a number of worker threads (defaults to 1)
         for _ in range(workers):
@@ -170,10 +170,9 @@ class Consumer(threading.Thread):
         key:                            # i.e. consumer
             queue: 'queue name'         # The name of the rabbitmq queue.
             auto_acknowledge: false     # Whether to auto acknowledge messages as they are read (recommended false).
-            prefetch: 10                # The number of unacknowledged messages to read from the queue at once
-                                        # (recommended to be equal to the number of workers).
             create_on_connect: true     # Whether to create a queue on connection.
-            workers: 10                 # The number of workers (threads) that handle messages. Defaults to 1.
+            concurrency: 10             # The number of workers (threads) that handle messages and the number of
+                                        # unacknowledged messages to read from the queue at once. Defaults to 1.
         ```
         `handler_fn`: A callback function to be executed on receipt of a new message.
 
@@ -213,10 +212,8 @@ class Consumer(threading.Thread):
             name: test.consumer
             queue: test
             auto_acknowledge: false
-            prefetch: 2
+            concurrency: 2
             create_on_connect: true
-            error: error
-            workers: 2
         ```
         **terminal**
         ```bash
