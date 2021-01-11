@@ -144,8 +144,8 @@ class _Connection:
 
         connection = self._config.get(self._key)
         prefetch = 1
-        if "prefetch" in connection:
-            prefetch = connection["prefetch"]
+        if "concurrency" in connection:
+            prefetch = connection["concurrency"]
         self._channel.basic_qos(prefetch_count=prefetch)
 
         self.add_on_channel_close_callback()
