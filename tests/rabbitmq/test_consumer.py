@@ -72,8 +72,7 @@ class TestConsumer:
             **test_config,
             "consumer": {
                 "queue": "pytest.concurrency",
-                "prefetch": workers,
-                "workers": workers,
+                "concurrency": workers,
                 "auto_acknowledge": True
             },
             "publisher": {
@@ -125,8 +124,7 @@ class TestConsumer:
             "consumer": {
                 "queue": "pytest.default_exceptions",
                 "auto_acknowledge": False,
-                "workers": 3,
-                "prefetch": 3
+                "concurrency": 3,
             },
             "publisher": {
                 "queue": "pytest.default_exceptions"
@@ -173,8 +171,7 @@ class TestConsumer:
             "consumer": {
                 "queue": "pytest.exceptions",
                 "auto_acknowledge": False,
-                "workers": 3,
-                "prefetch": 3
+                "concurrency": 3,
             },
             "publisher": {
                 "queue": "pytest.exceptions"

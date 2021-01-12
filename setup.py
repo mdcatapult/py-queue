@@ -16,14 +16,13 @@ setup(name='klein_queue',
       version=__version__,
       description='RabbitMQ integration',
       url='http://gitlab.mdcatapult.io/informatics/klein/klein_queue',
-      author='Matt Cockayne',
-      author_email='matthew.cockayne@md.catapult.org.uk',
+      author='Medicines Discovery Catapult',
+      author_email='SoftwareEngineering@md.catapult.org.uk',
       license='MIT',
       packages=find_packages('src'),
       package_dir={'': 'src'},
       install_requires=[
-          'klein_config',
-          'pika>=1.1.0',
-          'requests'
+          'klein_config>=3.0.0,<4.0.0',
+          'pika>=1.1.0,<2.0.0'
       ],
       zip_safe=True)
