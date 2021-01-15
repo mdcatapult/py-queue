@@ -25,6 +25,10 @@ class Publisher(Thread):
         key:                            # i.e. upstream
             queue: 'queue name'         # The name of the rabbitmq queue.
             create_on_connect: true     # Whether to create a queue on connection.
+            exchange: 'exchange name'   # (Optional) the name of the exchange to publish to (defaults to the default
+                                        # exchange).
+            exchange_type: 'direct'     # (Optional) the type of exchange to consume from (e.g. 'topic', 'fanout').
+                                        # Defaults to 'direct'.
         ```
         ## Example
         **main.py**
@@ -48,6 +52,7 @@ class Publisher(Thread):
             username: guest
             password: guest
             heartbeat: 2
+            exchange: 'test_exchange' # You can also define an exchange here if it is used by multiple consumers.
         publisher:
             queue: test
             create_on_connect: true
@@ -162,7 +167,8 @@ class _PublisherWorker(_Connection):
 
         connection = self._config.get(self._key)
         LOGGER.debug('Publishing message to queue %s', connection["queue"])
-        self._channel.basic_publish('', connection["queue"],
+        self._channel.basic_publish(self._exchange,
+                                    connection["queue"],
                                     json.dumps(message),
                                     properties)
 

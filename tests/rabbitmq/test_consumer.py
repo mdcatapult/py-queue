@@ -60,6 +60,46 @@ class TestConsumer:
         consumer.stop()
         publisher.stop()
 
+    def test_exchange_creation(self):
+        test_message = {"id": "d5d581bb-8b42-4d1e-bbf9-3fee91ab5920"}
+        delivery = pika.spec.Basic.Deliver()
+
+        def handler_fn(msg, basic_deliver=None, **kwargs):
+            nonlocal delivery, waiting
+            delivery = basic_deliver
+            waiting = False
+
+        config = EnvironmentAwareConfig({
+            **test_config,
+            "consumer": {
+                "queue": "pytest.test-queue",
+                "auto_acknowledge": False,
+                "concurrency": 3,
+                "exchange": "test-exchange"
+            },
+            "publisher": {
+                "queue": "pytest.test-queue",
+                "exchange": "test-exchange"
+            },
+        })
+
+        consumer = Consumer(config, "consumer", handler_fn)
+        consumer.start()
+
+        test_publisher = Publisher(config, "publisher")
+        test_publisher.start()
+        test_publisher.publish(test_message)
+
+        waiting = True
+        while waiting:
+            pass
+
+        assert delivery.exchange == "test-exchange"
+        assert delivery.routing_key == "pytest.test-queue"
+
+        test_publisher.stop()
+        consumer.stop()
+
     def test_worker_concurrency(self):
         workers = randint(2, 5)
         events = []
