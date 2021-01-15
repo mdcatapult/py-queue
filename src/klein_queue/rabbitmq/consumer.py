@@ -77,7 +77,7 @@ class _ConsumerConnection(_Connection):
     You can specify the number of workers (threads).
     """
 
-    def __init__(self, config, key, handler_fn=None, exception_handler=None):
+    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None):
         self._key = key
         self._config = config
         self.handler_fn = handler_fn
@@ -95,7 +95,7 @@ class _ConsumerConnection(_Connection):
             worker.start()
             self._workers.append(worker)
 
-        super().__init__(config, key)
+        super().__init__(config, key, exchange=exchange)
 
     def set_handler(self, handler_fn):
         """Set a new handler function on the Consumer to be called by the worker threads on receipt of a new message."""
@@ -169,6 +169,9 @@ class Consumer(threading.Thread):
         ```yaml
         key:                            # i.e. consumer
             queue: 'queue name'         # The name of the rabbitmq queue.
+            exchange: 'exchange name'   # (Optional) the name of the exchange to consume from.
+            exchange_type: 'direct'     # (Optional) the type of exchange to consume from (e.g. 'topic', 'fanout').
+                                        # Defaults to 'direct'.
             auto_acknowledge: false     # Whether to auto acknowledge messages as they are read (recommended false).
             create_on_connect: true     # Whether to create a queue on connection.
             concurrency: 10             # The number of workers (threads) that handle messages and the number of
@@ -208,6 +211,7 @@ class Consumer(threading.Thread):
             username: guest
             password: guest
             heartbeat: 2
+            exchange: 'test_exchange' # You can also define an exchange here if it is used by multiple consumers.
         consumer:
             name: test.consumer
             queue: test

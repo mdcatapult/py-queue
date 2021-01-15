@@ -1,5 +1,4 @@
 import abc
-import json
 import logging
 import random
 import pika
@@ -49,13 +48,15 @@ class _Connection:
 
         return conns
 
-    def __init__(self, config, key):
+    def __init__(self, config, key, exchange=None):
         self._connection_params = self.__get_url_parameters(config)
         self._config = config
         self._key = key
         self._connection = None
         self._channel = None
         self._closing = False
+        self._exchange = exchange if exchange else config.get(f"{key}.exchange", config.get("rabbitmq.exchange", ""))
+        self._exchange_type = config.get(f"{key}.exchange_type", config.get("rabbitmq.exchange_type", "direct"))
 
     def connect(self):
         """
@@ -170,26 +171,18 @@ class _Connection:
 
     def setup_exchanges(self):
         """
-        if exchanges configured then auto declare as fanout exchanges
+        if an exchange is configured then declare
         and bind callback for successful declaration
         if no exchanges configured then setup queues
         """
-        connection = self._config.get(self._key)
-        if "exchanges" in connection:
-            LOGGER.debug('Declaring exchanges %s', connection["exchanges"])
-            for ex in connection['exchanges']:
-                ex_name = ex
-                ex_type = 'fanout'
-                if isinstance(ex, dict):
-                    if "name" not in ex or "type" not in ex:
-                        raise RuntimeError(
-                            "Invalid consumer configuration: %s" %
-                            (json.dumps(ex)))
-                    ex_name = ex["name"]
-                    ex_type = ex["type"]
-
-                self._channel.exchange_declare(
-                    ex_name, ex_type, callback=self.on_exchange_declareok)
+        if self._exchange:
+            LOGGER.debug('Declaring exchange %s', self._exchange)
+            self._channel.exchange_declare(
+                self._exchange,
+                self._exchange_type,
+                callback=self.on_exchange_declareok,
+                durable=True
+            )
         else:
             LOGGER.debug('No exchanges to declare so setting up queue')
             self.setup_queue()
@@ -226,19 +219,10 @@ class _Connection:
         if exchanges configured then bind queue to exchange
         """
         connection = self._config.get(self._key)
-        if "exchanges" in connection:
-            for ex in connection['exchanges']:
-                LOGGER.debug('Binding %s to %s', ex, connection["queue"])
-                ex_name = ex
-                if isinstance(ex, dict):
-                    if "name" not in ex:
-                        raise RuntimeError(
-                            "Invalid consumer configuration: %s" %
-                            (json.dumps(ex)))
-                    ex_name = ex["name"]
-
+        if self._exchange:
+                LOGGER.debug('Binding %s to %s', self._exchange, connection["queue"])
                 self._channel.queue_bind(
-                    connection["queue"], ex_name, callback=self.on_bindok)
+                    connection["queue"], self._exchange, callback=self.on_bindok)
         else:
             self._start_activity()
 
