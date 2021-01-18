@@ -161,7 +161,7 @@ class Consumer(threading.Thread):
     """Multithreaded consumer
     """
 
-    def __init__(self, config, key, handler_fn=None, exception_handler=None):
+    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None):
         """
         `config`: The `klein_config.config.EnvironmentAwareConfig` containing connection details to rabbit.
 
@@ -225,7 +225,7 @@ class Consumer(threading.Thread):
         ```
         """
 
-        self._consumer = _ConsumerConnection(config, key, handler_fn, exception_handler)
+        self._consumer = _ConsumerConnection(config, key, handler_fn, exception_handler, exchange)
         super().__init__()
 
     def set_handler(self, handler_fn):
