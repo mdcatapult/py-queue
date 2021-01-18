@@ -16,7 +16,7 @@ class Publisher(Thread):
     This is more efficient than creating a new connection for every message.
     """
 
-    def __init__(self, config, key):
+    def __init__(self, config, key, exchange=None):
         """
         `config`: The `klein_config.config.EnvironmentAwareConfig` containing connection details to rabbit.
 
@@ -62,7 +62,7 @@ class Publisher(Thread):
         $ python main.py --config config.yaml
         ```
         """
-        self._publisher = _PublisherWorker(config, key)
+        self._publisher = _PublisherWorker(config, key, exchange=exchange)
         self.queue = config.get("{}.queue".format(key))
         super().__init__()
 
@@ -105,7 +105,7 @@ class Publisher(Thread):
 
 class _PublisherWorker(_Connection):
 
-    def __init__(self, config, key):
+    def __init__(self, config, key, exchange=None):
         self._messages = deque([])
         self._deliveries = []
         self._acked = 0
@@ -114,7 +114,7 @@ class _PublisherWorker(_Connection):
         self._stopping = False
         self._key = key
 
-        super().__init__(config, key)
+        super().__init__(config, key, exchange=exchange)
 
     def _start_activity(self):
         LOGGER.debug('Issuing consumer related RPC commands')
