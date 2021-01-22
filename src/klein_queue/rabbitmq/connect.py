@@ -60,6 +60,8 @@ class _Connection:
         self._bind_arguments = config.get(f"{key}.exchange_bind_arguments", False)
         if self._bind_arguments:
             self._bind_arguments = dict(self._bind_arguments)
+        else:
+            self._bind_arguments = None
 
     def connect(self):
         """
