@@ -230,7 +230,7 @@ class _Connection:
         if self._exchange:
                 LOGGER.debug('Binding %s to %s', self._exchange, connection["queue"])
                 self._channel.queue_bind(
-                    connection["queue"], self._exchange, callback=self.on_bindok)
+                    connection["queue"], self._exchange, arguments=self._bind_arguments, callback=self.on_bindok)
         else:
             self._start_activity()
 
