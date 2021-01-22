@@ -57,11 +57,7 @@ class _Connection:
         self._closing = False
         self._exchange = exchange if exchange else config.get(f"{key}.exchange", config.get("rabbitmq.exchange", ""))
         self._exchange_type = config.get(f"{key}.exchange_type", config.get("rabbitmq.exchange_type", "direct"))
-        self._bind_arguments = config.get(f"{key}.exchange_bind_arguments", False)
-        if self._bind_arguments:
-            self._bind_arguments = dict(self._bind_arguments)
-        else:
-            self._bind_arguments = None
+        self._bind_arguments = config.get(f"{key}.exchange_bind_arguments", {})
 
     def connect(self):
         """
