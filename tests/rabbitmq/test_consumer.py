@@ -260,7 +260,7 @@ class TestConsumer:
         assert error_properties.headers['x-consumer'] == "consumer"
         assert "KleinQueueError" in error_properties.headers['x-exception']
         assert error_properties.headers['x-message'] == "forced error"
-        # assert error_properties.headers['x-queue'] == 'pytest.exceptions'
+        assert error_properties.headers['x-queue'] == 'pytest.exceptions'
         assert "forced error" in error_properties.headers['x-stack-trace']
         assert error_properties.headers["x-original-routing-key"] == "pytest.exceptions"
         assert error_properties.headers["x-original-exchange"] == ""

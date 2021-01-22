@@ -72,7 +72,7 @@ def new_error_publishing_exception_handler(consumer_name, upstream, errors, max_
             'x-datetime': datetime.datetime.now().isoformat(),
             "x-exception": str(type(exception)),
             "x-message": str(exception),
-            # "x-queue": upstream.queue,
+            "x-queue": upstream.queue,
             "x-stack-trace": "\n".join(format_tb(exception.__traceback__)),
             "x-original-exchange": basic_deliver.exchange,
             "x-original-routing-key": basic_deliver.routing_key
