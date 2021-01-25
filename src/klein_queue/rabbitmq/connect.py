@@ -195,7 +195,7 @@ class _Connection:
         """
         LOGGER.debug('Exchange declared')
         connection = self._config.get(self._key)
-        if connection["queue"]:
+        if connection.get("queue", ''):
             self.setup_queue()
         else:
             LOGGER.debug('No queue to declare - starting activity')
