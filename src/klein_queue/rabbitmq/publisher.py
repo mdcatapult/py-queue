@@ -166,9 +166,11 @@ class _PublisherWorker(_Connection):
         (message, properties) = self._messages.popleft()
 
         connection = self._config.get(self._key)
-        LOGGER.debug('Publishing message to queue %s', connection["queue"])
+        if connection.has("queue"):
+            LOGGER.debug('Publishing message to queue %s', connection["queue"])
+        LOGGER.debug('Publishing message to exchange %s', connection["exchange"])
         self._channel.basic_publish(self._exchange,
-                                    connection["queue"],
+                                    connection.get("queue", ''),
                                     json.dumps(message),
                                     properties)
 
