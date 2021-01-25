@@ -172,6 +172,7 @@ class Consumer(threading.Thread):
             exchange: 'exchange name'   # (Optional) the name of the exchange to consume from.
             exchange_type: 'direct'     # (Optional) the type of exchange to consume from (e.g. 'topic', 'fanout').
                                         # Defaults to 'direct'.
+            exchange_bind_arguments     # (Optional) Key: value  pairs of arguments to use when binding to an exchange.
             auto_acknowledge: false     # Whether to auto acknowledge messages as they are read (recommended false).
             create_on_connect: true     # Whether to create a queue on connection.
             concurrency: 10             # The number of workers (threads) that handle messages and the number of
@@ -218,6 +219,12 @@ class Consumer(threading.Thread):
             auto_acknowledge: false
             concurrency: 2
             create_on_connect: true
+            exchange: test_events_exchange
+            exchange_type: headers
+            exchange_bind_arguments:
+                db: test_db
+                coll: test_coll
+                x-match: any (default in rabbitMQ is all)
         ```
         **terminal**
         ```bash
