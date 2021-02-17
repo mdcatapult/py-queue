@@ -29,6 +29,7 @@ class Publisher(Thread):
                                         # exchange).
             exchange_type: 'direct'     # (Optional) the type of exchange to consume from (e.g. 'topic', 'fanout').
                                         # Defaults to 'direct'.
+            confirm_delivery: false     # (Optional) toggles delivery confirmations. Defaults to true.
         ```
         ## Example
         **main.py**
@@ -45,7 +46,7 @@ class Publisher(Thread):
         
         ```
         **config.yaml**
-        ```python
+        ```yaml
         rabbitmq:
             host: [localhost]
             port: 5672
