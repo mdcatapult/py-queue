@@ -113,12 +113,15 @@ class _PublisherWorker(_Connection):
         self._message_number = 0
         self._stopping = False
         self._key = key
+        d = config.get(f"{key}.confirm_delivery", "true")
+        self._confirm_delivery = d is True or (isinstance(d, str) and d.lower() in ["true", "1", "yes"])
 
         super().__init__(config, key, exchange=exchange)
 
     def _start_activity(self):
         LOGGER.debug('Issuing consumer related RPC commands')
-        self.enable_delivery_confirmations()
+        if self._confirm_delivery:
+            self.enable_delivery_confirmations()
         self.schedule_next_message()
 
     def _stop_activity(self):
@@ -177,7 +180,8 @@ class _PublisherWorker(_Connection):
                                     properties)
 
         self._message_number += 1
-        self._deliveries.append(self._message_number)
+        if self._confirm_delivery:
+            self._deliveries.append(self._message_number)
         LOGGER.debug('Published message # %i', self._message_number)
         self.schedule_next_message()
 
