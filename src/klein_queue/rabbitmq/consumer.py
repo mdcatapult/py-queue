@@ -87,7 +87,7 @@ class _ConsumerConnection(_Connection):
         self._workers = []
         self.auto_ack = self._config.get(f"{key}.auto_acknowledge", False)
 
-        workers = self._config.get(f"{key}.concurrency", 1)
+        workers = int(self._config.get(f"{key}.concurrency", 1))
         LOGGER.info('Starting %d MessageWorker threads', workers)
         # spawn a number of worker threads (defaults to 1)
         for _ in range(workers):
