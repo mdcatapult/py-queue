@@ -19,6 +19,8 @@ class _MessageWorker(threading.Thread):
         self._consumer = consumer
         self._closing = False
         self._exception_handler = exception_handler
+
+        self._is_active = False
         super().__init__()
 
     def run(self):
@@ -33,6 +35,7 @@ class _MessageWorker(threading.Thread):
             try:
                 # get a message from the queue
                 (body, properties, basic_deliver) = self._consumer._message_queue.get(True, 1)
+                self._is_active = True
 
                 try:
                     self._consumer.handler_fn(json.loads(
@@ -64,9 +67,13 @@ class _MessageWorker(threading.Thread):
                         nack(False)
 
             except queue.Empty:
-                continue
+                if self._is_active:
+                    self._consumer.on_empty_queue()
+                    self._is_active = False
 
     def stop(self):
+        if self._is_active:
+            self._consumer.on_empty_queue()
         self._closing = True
 
 
@@ -77,10 +84,11 @@ class _ConsumerConnection(_Connection):
     You can specify the number of workers (threads).
     """
 
-    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None):
+    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None, on_empty_queue=None):
         self._key = key
         self._config = config
         self.handler_fn = handler_fn
+        self.on_empty_queue = on_empty_queue or (lambda: None)  # lambda for type safety
         self._handler_thread = None
         self._consumer_tag = None
         self._message_queue = queue.Queue()
@@ -161,7 +169,7 @@ class Consumer(threading.Thread):
     """Multithreaded consumer
     """
 
-    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None):
+    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None, on_empty_queue=None):
         """
         `config`: The `klein_config.config.EnvironmentAwareConfig` containing connection details to rabbit.
 
@@ -181,6 +189,9 @@ class Consumer(threading.Thread):
         `handler_fn`: A callback function to be executed on receipt of a new message.
 
         `exception_handler`: A callback function to be executed when an exception is caught during message handling.
+
+        `on_empty_queue`: An optional callback function to be executed when the queue empties
+
         ## Exception handling
         Exceptions raised in the handler function are handled by exactly one of the following cases. In order of
         precedence:
@@ -232,7 +243,7 @@ class Consumer(threading.Thread):
         ```
         """
 
-        self._consumer = _ConsumerConnection(config, key, handler_fn, exception_handler, exchange)
+        self._consumer = _ConsumerConnection(config, key, handler_fn, exception_handler, exchange, on_empty_queue)
         super().__init__()
 
     def set_handler(self, handler_fn):
