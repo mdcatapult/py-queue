@@ -59,7 +59,7 @@ class _Connection:
         self._exchange_type = config.get(f"{key}.exchange_type", config.get("rabbitmq.exchange_type", "direct"))
         self._bind_arguments = config.get(f"{key}.exchange_bind_arguments", {})
 
-    def connect(self):
+    def connect(self):  # pylint: disable=inconsistent-return-statements
         """
         Create new connection to rabbitmq server.
         """
