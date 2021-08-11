@@ -300,9 +300,92 @@ class TestConsumer:
         publisher.start()
         publisher.publish({'msg': 'test_message'})
 
-        # timeout = 10 seconds on waiting for message to arrive and then hit empty queue
-        message_received_in_time = event.wait(10)
+        # timeout = 90 seconds on waiting for message to arrive and then hit empty queue
+        message_received_in_time = event.wait(90)
         assert message_received_in_time
+
+        consumer.stop()
+        publisher.stop()
+
+    def test_on_empty_queue_callback_should_be_called_once_multiple_msg(self):
+        event = threading.Event()
+
+        def handle_handle(cons):
+            def handler_fn(msg, properties=None, **kwargs):
+                pass
+            return handler_fn
+
+        def on_empty_queue(tracker=[]):
+            event.set()
+            tracker.append(1)
+            assert len(tracker) == 1  # Run once only
+
+        config = EnvironmentAwareConfig({
+            **test_config,
+            "consumer": {
+                "queue": "pytest.consume",
+                "auto_acknowledge": True,
+                "create_on_connect": True
+            },
+            "publisher": {
+                "queue": "pytest.consume"
+            }
+        })
+
+        consumer = Consumer(config, "consumer", on_empty_queue=on_empty_queue)
+        consumer.set_handler(handle_handle(consumer))
+
+        publisher = Publisher(config, "publisher")
+        publisher.start()
+        publisher.publish({'msg': 'test_message'})
+        publisher.publish({'msg': 'test_message'})
+        publisher.publish({'msg': 'test_message'})
+
+        c = threading.Thread(target=consumer.run)
+        c.start()
+
+        # timeout = 90 seconds on waiting for message to arrive and then hit empty queue
+        message_received_in_time = event.wait(90)
+        assert message_received_in_time
+
+        consumer.stop()
+        publisher.stop()
+
+    def test_on_empty_queue_callback_should_not_be_called(self):
+        event = threading.Event()
+
+        def handle_handle(cons):
+            def handler_fn(msg, properties=None, **kwargs):
+                pass
+            return handler_fn
+
+        def on_empty_queue():
+            event.set()
+
+        config = EnvironmentAwareConfig({
+            **test_config,
+            "consumer": {
+                "queue": "pytest.consume",
+                "auto_acknowledge": True,
+                "create_on_connect": True
+            },
+            "publisher": {
+                "queue": "pytest.consume"
+            }
+        })
+
+        consumer = Consumer(config, "consumer", on_empty_queue=on_empty_queue)
+        consumer.set_handler(handle_handle(consumer))
+
+        c = threading.Thread(target=consumer.run)
+        c.start()
+
+        publisher = Publisher(config, "publisher")
+        publisher.start()
+
+        # timeout = 60 seconds. event should not be reached as no message is sent
+        message_received_in_time = event.wait(60)
+        assert not message_received_in_time
 
         consumer.stop()
         publisher.stop()
