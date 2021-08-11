@@ -53,8 +53,8 @@ class TestConsumer:
         publisher.start()
         publisher.publish({'msg': 'test_message'})
 
-        # timeout = 10 seconds on waiting for message to arrive
-        message_received_in_time = event.wait(10)
+        # timeout = 90 seconds on waiting for message to arrive
+        message_received_in_time = event.wait(90)
         assert message_received_in_time
 
         consumer.stop()
@@ -137,7 +137,7 @@ class TestConsumer:
             publisher.publish({'event': i})
 
         for i in range(workers):
-            message_received_in_time = events[i].wait(5)
+            message_received_in_time = events[i].wait(90)
             assert message_received_in_time
 
         consumer.stop()
