@@ -84,11 +84,11 @@ class _ConsumerConnection(_Connection):
     You can specify the number of workers (threads).
     """
 
-    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None, on_empty_queue_fn=None):
+    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None, on_empty_queue_fn=(lambda: None)):
         self._key = key
         self._config = config
         self.handler_fn = handler_fn
-        self.on_empty_queue_fn = on_empty_queue_fn or (lambda: None)  # lambda for type safety
+        self.on_empty_queue_fn = on_empty_queue_fn
         self._handler_thread = None
         self._consumer_tag = None
         self._message_queue = queue.Queue()
@@ -169,7 +169,7 @@ class Consumer(threading.Thread):
     """Multithreaded consumer
     """
 
-    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None, on_empty_queue_fn=None):
+    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None, on_empty_queue_fn=(lambda: None)):
         """
         `config`: The `klein_config.config.EnvironmentAwareConfig` containing connection details to rabbit.
 
