@@ -53,8 +53,8 @@ class TestConsumer:
         publisher.start()
         publisher.publish({'msg': 'test_message'})
 
-        # timeout = 90 seconds on waiting for message to arrive
-        message_received_in_time = event.wait(90)
+        # timeout = 10 seconds on waiting for message to arrive
+        message_received_in_time = event.wait(10)
         assert message_received_in_time
 
         consumer.stop()
@@ -137,7 +137,7 @@ class TestConsumer:
             publisher.publish({'event': i})
 
         for i in range(workers):
-            message_received_in_time = events[i].wait(90)
+            message_received_in_time = events[i].wait(5)
             assert message_received_in_time
 
         consumer.stop()
@@ -265,7 +265,7 @@ class TestConsumer:
         assert error_properties.headers["x-original-routing-key"] == "pytest.exceptions"
         assert error_properties.headers["x-original-exchange"] == ""
 
-    def test_on_empty_queue_callback(self):
+    def test_on_empty_queue_callback_should_run_once_single_msg(self):
         event = threading.Event()
 
         def handle_handle(cons):
@@ -273,7 +273,7 @@ class TestConsumer:
                 pass
             return handler_fn
 
-        def on_empty_queue(tracker=[]):  # make use of shared instance of list
+        def on_empty_queue_fn(tracker=[]):  # make use of shared instance of list
             event.set()
             tracker.append(1)
             assert len(tracker) == 1  # Run the first time only
@@ -290,7 +290,7 @@ class TestConsumer:
             }
         })
 
-        consumer = Consumer(config, "consumer", on_empty_queue=on_empty_queue)
+        consumer = Consumer(config, "consumer", on_empty_queue_fn=on_empty_queue_fn)
         consumer.set_handler(handle_handle(consumer))
 
         c = threading.Thread(target=consumer.run)
@@ -300,8 +300,8 @@ class TestConsumer:
         publisher.start()
         publisher.publish({'msg': 'test_message'})
 
-        # timeout = 90 seconds on waiting for message to arrive and then hit empty queue
-        message_received_in_time = event.wait(90)
+        # on waiting for message to arrive and then hit empty queue
+        message_received_in_time = event.wait(30)
         assert message_received_in_time
 
         consumer.stop()
@@ -315,7 +315,7 @@ class TestConsumer:
                 pass
             return handler_fn
 
-        def on_empty_queue(tracker=[]):
+        def on_empty_queue_fn(tracker=[]):
             event.set()
             tracker.append(1)
             assert len(tracker) == 1  # Run once only
@@ -332,7 +332,7 @@ class TestConsumer:
             }
         })
 
-        consumer = Consumer(config, "consumer", on_empty_queue=on_empty_queue)
+        consumer = Consumer(config, "consumer", on_empty_queue_fn=on_empty_queue_fn)
         consumer.set_handler(handle_handle(consumer))
 
         publisher = Publisher(config, "publisher")
@@ -344,7 +344,7 @@ class TestConsumer:
         c = threading.Thread(target=consumer.run)
         c.start()
 
-        # timeout = 90 seconds on waiting for message to arrive and then hit empty queue
+        # waiting for message to arrive and then hit empty queue
         message_received_in_time = event.wait(90)
         assert message_received_in_time
 
@@ -359,7 +359,7 @@ class TestConsumer:
                 pass
             return handler_fn
 
-        def on_empty_queue():
+        def on_empty_queue_fn():
             event.set()
 
         config = EnvironmentAwareConfig({
@@ -374,7 +374,7 @@ class TestConsumer:
             }
         })
 
-        consumer = Consumer(config, "consumer", on_empty_queue=on_empty_queue)
+        consumer = Consumer(config, "consumer", on_empty_queue_fn=on_empty_queue_fn)
         consumer.set_handler(handle_handle(consumer))
 
         c = threading.Thread(target=consumer.run)
