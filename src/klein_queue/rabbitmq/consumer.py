@@ -190,7 +190,7 @@ class Consumer(threading.Thread):
 
         `exception_handler`: A callback function to be executed when an exception is caught during message handling.
 
-        `on_empty_queue`: An optional callback function to be executed when the queue empties
+        `on_empty_queue_fn`: An optional callback function to be executed when the queue empties
 
         ## Exception handling
         Exceptions raised in the handler function are handled by exactly one of the following cases. In order of
