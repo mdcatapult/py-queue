@@ -281,12 +281,12 @@ class TestConsumer:
         config = EnvironmentAwareConfig({
             **test_config,
             "consumer": {
-                "queue": "pytest.consume",
+                "queue": "pytest.on_empty_queue_callback_should_run_once_single_msg",
                 "auto_acknowledge": True,
                 "create_on_connect": True
             },
             "publisher": {
-                "queue": "pytest.consume"
+                "queue": "pytest.on_empty_queue_callback_should_run_once_single_msg"
             }
         })
 
@@ -301,7 +301,7 @@ class TestConsumer:
         publisher.publish({'msg': 'test_message'})
 
         # on waiting for message to arrive and then hit empty queue
-        message_received_in_time = event.wait(60)
+        message_received_in_time = event.wait(10)
         assert message_received_in_time
 
         consumer.stop()
@@ -345,7 +345,7 @@ class TestConsumer:
         c.start()
 
         # waiting for message to arrive and then hit empty queue
-        message_received_in_time = event.wait(90)
+        message_received_in_time = event.wait(30)
         assert message_received_in_time
 
         consumer.stop()
@@ -365,12 +365,12 @@ class TestConsumer:
         config = EnvironmentAwareConfig({
             **test_config,
             "consumer": {
-                "queue": "pytest.consume",
+                "queue": "pytest.on_empty_not_called",
                 "auto_acknowledge": True,
                 "create_on_connect": True
             },
             "publisher": {
-                "queue": "pytest.consume"
+                "queue": "pytest.on_empty_not_called"
             }
         })
 
@@ -380,7 +380,7 @@ class TestConsumer:
         c = threading.Thread(target=consumer.run)
         c.start()
         # timeout = 60 seconds. event should not be reached as no message is sent
-        message_received_in_time = event.wait(60)
+        message_received_in_time = event.wait(10)
         assert not message_received_in_time
 
         consumer.stop()
@@ -399,12 +399,12 @@ class TestConsumer:
         config = EnvironmentAwareConfig({
             **test_config,
             "consumer": {
-                "queue": "pytest.consume",
+                "queue": "pytest.on_stop_callback_should_be_called_after_closed_no_msg",
                 "auto_acknowledge": True,
                 "create_on_connect": True
             },
             "publisher": {
-                "queue": "pytest.consume"
+                "queue": "pytest.on_stop_callback_should_be_called_after_closed_no_msg"
             }
         })
 
@@ -419,7 +419,7 @@ class TestConsumer:
         consumer.stop()
 
         # timeout = 60 seconds.
-        message_received_in_time = event.wait(60)
+        message_received_in_time = event.wait(10)
         assert message_received_in_time
 
     def test_on_stop_callback_should_not_be_called_before_closed_no_msg(self):
@@ -436,12 +436,12 @@ class TestConsumer:
         config = EnvironmentAwareConfig({
             **test_config,
             "consumer": {
-                "queue": "pytest.consume",
+                "queue": "pytest.on_stop_callback_should_not_be_called_before_closed_no_msg",
                 "auto_acknowledge": True,
                 "create_on_connect": True
             },
             "publisher": {
-                "queue": "pytest.consume"
+                "queue": "pytest.on_stop_callback_should_not_be_called_before_closed_no_msg"
             }
         })
 
@@ -452,7 +452,7 @@ class TestConsumer:
         c.start()
 
         # timeout = 60 seconds.
-        message_received_in_time = event.wait(60)
+        message_received_in_time = event.wait(10)
         assert not message_received_in_time
 
         consumer.stop()
@@ -471,12 +471,12 @@ class TestConsumer:
         config = EnvironmentAwareConfig({
             **test_config,
             "consumer": {
-                "queue": "pytest.consume",
+                "queue": "pytest.on_stop_callback_should_be_called_after_closed_with_msg",
                 "auto_acknowledge": True,
                 "create_on_connect": True
             },
             "publisher": {
-                "queue": "pytest.consume"
+                "queue": "pytest.on_stop_callback_should_be_called_after_closed_with_msg"
             }
         })
 
@@ -496,7 +496,7 @@ class TestConsumer:
         consumer.stop()
 
         # timeout = 60 seconds.
-        message_received_in_time = event.wait(60)
+        message_received_in_time = event.wait(10)
         assert message_received_in_time
 
     def test_on_stop_callback_should_not_be_called_before_closed_with_msg(self):
@@ -513,12 +513,12 @@ class TestConsumer:
         config = EnvironmentAwareConfig({
             **test_config,
             "consumer": {
-                "queue": "pytest.consume",
+                "queue": "pytest.on_stop_callback_should_not_be_called_before_closed_with_msg",
                 "auto_acknowledge": True,
                 "create_on_connect": True
             },
             "publisher": {
-                "queue": "pytest.consume"
+                "queue": "pytest.on_stop_callback_should_not_be_called_before_closed_with_msg"
             }
         })
 
@@ -533,7 +533,7 @@ class TestConsumer:
         publisher.publish({'msg': 'test_message'})
 
         # timeout = 60 seconds.
-        message_received_in_time = event.wait(60)
+        message_received_in_time = event.wait(10)
         assert not message_received_in_time
 
         publisher.stop()
