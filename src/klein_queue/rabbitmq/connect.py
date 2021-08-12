@@ -59,7 +59,7 @@ class _Connection:
         self._exchange_type = config.get(f"{key}.exchange_type", config.get("rabbitmq.exchange_type", "direct"))
         self._bind_arguments = config.get(f"{key}.exchange_bind_arguments", {})
 
-    def connect(self):  # pylint: disable=inconsistent-return-statements
+    def connect(self):
         """
         Create new connection to rabbitmq server.
         """
@@ -85,6 +85,8 @@ class _Connection:
             except pika.exceptions.AMQPConnectionError:
                 print("Connection was closed, retrying...")
                 continue
+
+        return None
 
     def on_connection_open(self, unused_connection):
         # pylint: disable=unused-argument

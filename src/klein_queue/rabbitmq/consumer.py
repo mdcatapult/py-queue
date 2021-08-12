@@ -72,8 +72,7 @@ class _MessageWorker(threading.Thread):
                     self._is_active = False
 
     def stop(self):
-        if self._is_active:
-            self._consumer.on_empty_queue_fn()
+        self._consumer.on_stop_fn()
         self._closing = True
 
 
@@ -84,11 +83,12 @@ class _ConsumerConnection(_Connection):
     You can specify the number of workers (threads).
     """
 
-    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None, on_empty_queue_fn=(lambda: None)):
+    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None, on_empty_queue_fn=(lambda: None), on_stop_fn=(lambda: None)):
         self._key = key
         self._config = config
         self.handler_fn = handler_fn
         self.on_empty_queue_fn = on_empty_queue_fn
+        self.on_stop_fn = on_stop_fn
         self._handler_thread = None
         self._consumer_tag = None
         self._message_queue = queue.Queue()
@@ -169,7 +169,7 @@ class Consumer(threading.Thread):
     """Multithreaded consumer
     """
 
-    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None, on_empty_queue_fn=(lambda: None)):
+    def __init__(self, config, key, handler_fn=None, exception_handler=None, exchange=None, on_empty_queue_fn=(lambda: None), on_stop_fn=(lambda: None)):
         """
         `config`: The `klein_config.config.EnvironmentAwareConfig` containing connection details to rabbit.
 
@@ -243,7 +243,7 @@ class Consumer(threading.Thread):
         ```
         """
 
-        self._consumer = _ConsumerConnection(config, key, handler_fn, exception_handler, exchange, on_empty_queue_fn)
+        self._consumer = _ConsumerConnection(config, key, handler_fn, exception_handler, exchange, on_empty_queue_fn, on_stop_fn)
         super().__init__()
 
     def set_handler(self, handler_fn):
