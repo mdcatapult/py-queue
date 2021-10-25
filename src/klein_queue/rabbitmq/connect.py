@@ -86,6 +86,8 @@ class _Connection:
                 print("Connection was closed, retrying...")
                 continue
 
+        return None
+
     def on_connection_open(self, unused_connection):
         # pylint: disable=unused-argument
         """

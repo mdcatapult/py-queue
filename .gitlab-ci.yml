@@ -1,5 +1,5 @@
 services:
-  - name: rabbitmq:management
+  - name: rabbitmq:3.8-management
     alias: rabbitmq
 
 variables:
