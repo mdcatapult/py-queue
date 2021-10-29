@@ -64,7 +64,7 @@ class Publisher(Thread):
         ```
         """
         self._publisher = _PublisherWorker(config, key, exchange=exchange)
-        self.queue = config.get("{}.queue".format(key), '')
+        self.queue = config.get(f"{format(key)}.queue", '')
         super().__init__()
 
     def run(self):

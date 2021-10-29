@@ -264,3 +264,277 @@ class TestConsumer:
         assert "forced error" in error_properties.headers['x-stack-trace']
         assert error_properties.headers["x-original-routing-key"] == "pytest.exceptions"
         assert error_properties.headers["x-original-exchange"] == ""
+
+    def test_on_empty_queue_callback_should_run_once_single_msg(self):
+        event = threading.Event()
+
+        def handle_handle(cons):
+            def handler_fn(msg, properties=None, **kwargs):
+                pass
+            return handler_fn
+
+        def on_empty_queue_fn(tracker=[]):  # make use of shared instance of list
+            event.set()
+            tracker.append(1)
+            assert len(tracker) == 1  # Run the first time only
+
+        config = EnvironmentAwareConfig({
+            **test_config,
+            "consumer": {
+                "queue": "pytest.on_empty_queue_callback_should_run_once_single_msg",
+                "auto_acknowledge": True,
+                "create_on_connect": True
+            },
+            "publisher": {
+                "queue": "pytest.on_empty_queue_callback_should_run_once_single_msg"
+            }
+        })
+
+        consumer = Consumer(config, "consumer", on_empty_queue_fn=on_empty_queue_fn)
+        consumer.set_handler(handle_handle(consumer))
+
+        c = threading.Thread(target=consumer.run)
+        c.start()
+
+        publisher = Publisher(config, "publisher")
+        publisher.start()
+        publisher.publish({'msg': 'test_message'})
+
+        # on waiting for message to arrive and then hit empty queue
+        message_received_in_time = event.wait(10)
+        assert message_received_in_time
+
+        consumer.stop()
+        publisher.stop()
+
+    def test_on_empty_queue_callback_should_be_called_once_multiple_msg(self):
+        event = threading.Event()
+
+        def handle_handle(cons):
+            def handler_fn(msg, properties=None, **kwargs):
+                pass
+            return handler_fn
+
+        def on_empty_queue_fn(tracker=[]):
+            event.set()
+            tracker.append(1)
+            assert len(tracker) == 1  # Run once only
+
+        config = EnvironmentAwareConfig({
+            **test_config,
+            "consumer": {
+                "queue": "pytest.consume",
+                "auto_acknowledge": True,
+                "create_on_connect": True
+            },
+            "publisher": {
+                "queue": "pytest.consume"
+            }
+        })
+
+        consumer = Consumer(config, "consumer", on_empty_queue_fn=on_empty_queue_fn)
+        consumer.set_handler(handle_handle(consumer))
+
+        publisher = Publisher(config, "publisher")
+        publisher.start()
+        publisher.publish({'msg': 'test_message'})
+        publisher.publish({'msg': 'test_message'})
+        publisher.publish({'msg': 'test_message'})
+
+        c = threading.Thread(target=consumer.run)
+        c.start()
+
+        # waiting for message to arrive and then hit empty queue
+        message_received_in_time = event.wait(30)
+        assert message_received_in_time
+
+        consumer.stop()
+        publisher.stop()
+
+    def test_on_empty_queue_callback_should_not_be_called(self):
+        event = threading.Event()
+
+        def handle_handle(cons):
+            def handler_fn(msg, properties=None, **kwargs):
+                pass
+            return handler_fn
+
+        def on_empty_queue_fn():
+            event.set()
+
+        config = EnvironmentAwareConfig({
+            **test_config,
+            "consumer": {
+                "queue": "pytest.on_empty_not_called",
+                "auto_acknowledge": True,
+                "create_on_connect": True
+            },
+            "publisher": {
+                "queue": "pytest.on_empty_not_called"
+            }
+        })
+
+        consumer = Consumer(config, "consumer", on_empty_queue_fn=on_empty_queue_fn)
+        consumer.set_handler(handle_handle(consumer))
+
+        c = threading.Thread(target=consumer.run)
+        c.start()
+        # timeout = 60 seconds. event should not be reached as no message is sent
+        message_received_in_time = event.wait(10)
+        assert not message_received_in_time
+
+        consumer.stop()
+
+    def test_on_stop_callback_should_be_called_after_closed_no_msg(self):
+        event = threading.Event()
+
+        def handle_handle(cons):
+            def handler_fn(msg, properties=None, **kwargs):
+                pass
+            return handler_fn
+
+        def on_stop_fn():
+            event.set()
+
+        config = EnvironmentAwareConfig({
+            **test_config,
+            "consumer": {
+                "queue": "pytest.on_stop_callback_should_be_called_after_closed_no_msg",
+                "auto_acknowledge": True,
+                "create_on_connect": True
+            },
+            "publisher": {
+                "queue": "pytest.on_stop_callback_should_be_called_after_closed_no_msg"
+            }
+        })
+
+        consumer = Consumer(config, "consumer", on_stop_fn=on_stop_fn)
+        consumer.set_handler(handle_handle(consumer))
+
+        c = threading.Thread(target=consumer.run)
+        c.start()
+
+        time.sleep(1)  # Give the thread time to do its thing
+
+        consumer.stop()
+
+        # timeout = 60 seconds.
+        message_received_in_time = event.wait(10)
+        assert message_received_in_time
+
+    def test_on_stop_callback_should_not_be_called_before_closed_no_msg(self):
+        event = threading.Event()
+
+        def handle_handle(cons):
+            def handler_fn(msg, properties=None, **kwargs):
+                pass
+            return handler_fn
+
+        def on_stop_fn():
+            event.set()
+
+        config = EnvironmentAwareConfig({
+            **test_config,
+            "consumer": {
+                "queue": "pytest.on_stop_callback_should_not_be_called_before_closed_no_msg",
+                "auto_acknowledge": True,
+                "create_on_connect": True
+            },
+            "publisher": {
+                "queue": "pytest.on_stop_callback_should_not_be_called_before_closed_no_msg"
+            }
+        })
+
+        consumer = Consumer(config, "consumer", on_stop_fn=on_stop_fn)
+        consumer.set_handler(handle_handle(consumer))
+
+        c = threading.Thread(target=consumer.run)
+        c.start()
+
+        # timeout = 60 seconds.
+        message_received_in_time = event.wait(10)
+        assert not message_received_in_time
+
+        consumer.stop()
+
+    def test_on_stop_callback_should_be_called_after_closed_with_msg(self):
+        event = threading.Event()
+
+        def handle_handle(cons):
+            def handler_fn(msg, properties=None, **kwargs):
+                pass
+            return handler_fn
+
+        def on_stop_fn():
+            event.set()
+
+        config = EnvironmentAwareConfig({
+            **test_config,
+            "consumer": {
+                "queue": "pytest.on_stop_callback_should_be_called_after_closed_with_msg",
+                "auto_acknowledge": True,
+                "create_on_connect": True
+            },
+            "publisher": {
+                "queue": "pytest.on_stop_callback_should_be_called_after_closed_with_msg"
+            }
+        })
+
+        consumer = Consumer(config, "consumer", on_stop_fn=on_stop_fn)
+        consumer.set_handler(handle_handle(consumer))
+
+        c = threading.Thread(target=consumer.run)
+        c.start()
+
+        publisher = Publisher(config, "publisher")
+        publisher.start()
+
+        publisher.publish({'msg': 'test_message'})
+        time.sleep(1)  # Give the thread time to do its thing
+
+        publisher.stop()
+        consumer.stop()
+
+        # timeout = 60 seconds.
+        message_received_in_time = event.wait(10)
+        assert message_received_in_time
+
+    def test_on_stop_callback_should_not_be_called_before_closed_with_msg(self):
+        event = threading.Event()
+
+        def handle_handle(cons):
+            def handler_fn(msg, properties=None, **kwargs):
+                pass
+            return handler_fn
+
+        def on_stop_fn():
+            event.set()
+
+        config = EnvironmentAwareConfig({
+            **test_config,
+            "consumer": {
+                "queue": "pytest.on_stop_callback_should_not_be_called_before_closed_with_msg",
+                "auto_acknowledge": True,
+                "create_on_connect": True
+            },
+            "publisher": {
+                "queue": "pytest.on_stop_callback_should_not_be_called_before_closed_with_msg"
+            }
+        })
+
+        consumer = Consumer(config, "consumer", on_stop_fn=on_stop_fn)
+        consumer.set_handler(handle_handle(consumer))
+
+        c = threading.Thread(target=consumer.run)
+        c.start()
+
+        publisher = Publisher(config, "publisher")
+        publisher.start()
+        publisher.publish({'msg': 'test_message'})
+
+        # timeout = 60 seconds.
+        message_received_in_time = event.wait(10)
+        assert not message_received_in_time
+
+        publisher.stop()
+        consumer.stop()

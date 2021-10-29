@@ -22,17 +22,11 @@ class _Connection:
 
         random.shuffle(hosts)
 
-        authority = '%s:%s@' % (
-            conf.get("rabbitmq.username"),
-            conf.get("rabbitmq.password")
-        )
+        authority = f'{conf.get("rabbitmq.username")}:{conf.get("rabbitmq.password")}@'
         if authority == ':@':
             authority = ''
 
-        url = 'amqp://%s%s:%s/' % (
-            authority,
-            hosts[0],
-            conf.get("rabbitmq.port"))
+        url = f'amqp://{authority}{hosts[0]}:{conf.get("rabbitmq.port")}/'
         connection_params = pika.URLParameters(url)
 
         connection_params._virtual_host = conf.get("rabbitmq.vhost", "/")
@@ -78,13 +72,15 @@ class _Connection:
                 continue
 
             except pika.exceptions.AMQPChannelError as err:
-                print("Caught a channel error: {}, stopping...".format(err))
+                print(f"Caught a channel error: {format(err)}, stopping...")
                 break
 
             # Recover on all other connection errors
             except pika.exceptions.AMQPConnectionError:
                 print("Connection was closed, retrying...")
                 continue
+
+        return None
 
     def on_connection_open(self, unused_connection):
         # pylint: disable=unused-argument

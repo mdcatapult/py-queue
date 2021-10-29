@@ -34,12 +34,8 @@ class ApiClient:
             host = host[0]
 
         # TODO: Implement other vhosts than default.
-        endpoint = "/api/exchanges/%%2f/%s/bindings/source" % exchange
-        url = 'http://%s:%s%s' % (
-            host,
-            self._config.get("rabbitmq.management_port"),
-            endpoint
-        )
+        endpoint = f"/api/exchanges/%%2f/{exchange}/bindings/source"
+        url = f'http://{host}:{self._config.get("rabbitmq.management_port")}{endpoint}'
 
         response = requests.get(url, auth=(
             self._config.get("rabbitmq.username"),
