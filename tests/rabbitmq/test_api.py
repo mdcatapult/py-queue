@@ -56,7 +56,7 @@ class TestApi:
         host = config.get('rabbitmq.host')
         if isinstance(host, list):
             host = host[0]
-        url = 'http://%s:15672/api/exchanges/%%2f/doclib/bindings/source' % host
+        url = f'http://{host}:15672/api/exchanges/%%2f/doclib/bindings/source'
 
         from src.klein_queue.rabbitmq.api import ApiClient
         client = ApiClient(config)
