@@ -1,12 +1,12 @@
 # Klein Queue
 
-Module to abstract queues. Currently only implements RabbitMQ, roadmap to include alternatives such as Kafka.
+Module to abstract queues. Currently implements RabbitMQ.
 
 ## Documentation
 
 API docs can be found at https://informatics.pages.mdcatapult.io/klein/py-queue/src.
 
-To view API docs for a particular version can be generated with `pdoc` with:
+Generate API docs for a particular version with `pdoc`:
 ```bash
 pip install pdoc3
 pdoc --http :8080 src
@@ -47,7 +47,6 @@ sudo apt install python3.7
 ```
 virtualenv -p python3.7 venv
 source venv/bin/activate
-echo -e "[global]\nindex = https://nexus.wopr.inf.mdc/repository/pypi-all/pypi\nindex-url = https://nexus.wopr.inf.mdc/repository/pypi-all/simple" > venv/pip.conf
 pip install -r requirements.txt
 ```
 
@@ -56,3 +55,5 @@ pip install -r requirements.txt
 docker-compose up
 python -m pytest
 ```
+## License
+This project is licensed under the terms of the Apache 2 license, which can be found in the repository as `LICENSE.txt`
