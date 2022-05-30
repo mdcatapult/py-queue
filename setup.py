@@ -44,4 +44,5 @@ setup(name='klein_queue',
           'pika>=1.1.0,<2.0.0',
           'requests>=2.23.0,<3.0.0'
       ],
-      zip_safe=True)
+      zip_safe=True,
+      include_package_data=True)
