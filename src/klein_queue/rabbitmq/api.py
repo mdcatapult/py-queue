@@ -23,13 +23,14 @@ class ApiClient:
         self._config = config
         self._cache = {}
 
-    def list_queues(self, exchange, flush=False):
+    def list_queues(self, exchange, flush=False, timeout=None):
         """Utility to retrieve queues attached to exchange
         configured user for connection should have
         management permissions.
 
         `exchange`: `str` the exchange to query.
         `flush`: `bool` whether or not to flush the results cache.
+        `timeout`: `int` the time to wait for the request
         """
 
         if flush:
@@ -51,10 +52,10 @@ class ApiClient:
         endpoint = f"/api/exchanges/%%2f/{exchange}/bindings/source"
         url = f'http://{host}:{self._config.get("rabbitmq.management_port")}{endpoint}'
 
-        response = requests.get(url, auth=(
-            self._config.get("rabbitmq.username"),
-            self._config.get("rabbitmq.password"))
-        )
+        response = requests.get(url,
+                                auth=(self._config.get("rabbitmq.username"),
+                                      self._config.get("rabbitmq.password")),
+                                timeout=timeout)
         queues = [q["destination"]
                   for q in response.json() if q["destination_type"] == "queue"]
 

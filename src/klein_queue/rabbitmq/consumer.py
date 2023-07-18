@@ -13,13 +13,15 @@
 # limitations under the License.
 
 # -*- coding: utf-8 -*-
+import functools
 import json
 import logging
-import functools
-import threading
 import queue
-from .connect import _Connection
+import threading
+import time
+
 from ..errors import KleinQueueError
+from .connect import _Connection
 
 LOGGER = logging.getLogger(__name__)
 
@@ -168,6 +170,12 @@ class _ConsumerConnection(_Connection):
         body = body.decode('utf-8')
 
         self._message_queue.put((body, properties, basic_deliver))
+
+    def on_channel_closed(self, channel, reason):
+        if not self._closing:
+            LOGGER.info('Channel closed, try and reconnect in 5 seconds')
+            time.sleep(5)
+            self.reconnect()
 
     def _stop_activity(self):
         if self._channel:
