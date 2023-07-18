@@ -75,5 +75,5 @@ class TestApi:
         from src.klein_queue.rabbitmq.api import ApiClient
         client = ApiClient(config)
         queues = client.list_queues("doclib")
-        mock_req.assert_called_with(url, auth=('doclib', 'doclib'))
+        mock_req.assert_called_with(url, auth=('doclib', 'doclib'), timeout=None)
         assert queues == ['archive', 'supervisor']
