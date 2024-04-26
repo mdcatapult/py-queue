@@ -40,7 +40,7 @@ setup(name='klein_queue',
       packages=find_packages('src'),
       package_dir={'': 'src'},
       install_requires=[
-          'klein_config>=3.0.0,<4.0.0',
+          'klein_config>=3.0.0',
           'pika>=1.1.0,<2.0.0',
           'requests>=2.23.0,<3.0.0'
       ],
